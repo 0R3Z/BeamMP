@@ -17,16 +17,17 @@ local players = {} -- contains name and ping for each entry
 --- @param jsonData table The JSON data containing player information.
 local function updatePlayerList(jsonData)
     local playerList = {}
-    for k, v in pairs(jsonData) do
-        table.insert(playerList, {name = k, ping = tostring(v)})
+    for name, ping in pairs(jsonData) do
+        playerList[#playerList + 1] = { name, ping }
     end
+
     table.sort(playerList, function(a, b)
-        return a.name < b.name
+        return a[1] < b[1] -- 1 is the name
     end)
+    
     players = playerList
 end
 
---- Renders the player list UI.
 local function render()
     local hw = imgui.GetWindowWidth() / 2
 
@@ -40,16 +41,18 @@ local function render()
     imgui.Separator()
 
     if imgui.BeginChild1("PlayerList", imgui.ImVec2(0, 0), false) then
-        for _, player in pairs(players) do
-            imgui.SetCursorPosX((imgui.GetWindowWidth() - imgui.CalcTextSize(player.name).x) / 4)
-            imgui.Text(player.name)
+        for _, player in ipairs(players) do
+            local name = player[1]
+            local ping = player[2]
+
+            imgui.SetCursorPosX((imgui.GetWindowWidth() - imgui.CalcTextSize(name).x) / 4)
+            imgui.Text(name)
             imgui.SameLine()
-            imgui.SetCursorPosX((imgui.GetWindowWidth() - imgui.CalcTextSize(ffi.string(player.ping)).x - hw / 2))
-            imgui.Text(player.ping)
+            imgui.SetCursorPosX((imgui.GetWindowWidth() - imgui.CalcTextSize(ffi.string(ping)).x - hw / 2))
+            imgui.Text(ping)
         end
     end
 end
-
 
 M.render = render
 M.updatePlayerList = updatePlayerList

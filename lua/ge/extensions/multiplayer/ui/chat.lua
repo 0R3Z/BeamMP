@@ -5,7 +5,7 @@
 --- multiplayer_ui_chat API.
 --- Author of this documentation is Titch
 --- @module multiplayer_ui_chat
---- @usage colorByRGB(r,g,b,a) -- internal access
+--- @usage colorFromRGB(r,g,b,a) -- internal access
 --- @usage multiplayer_ui_chat.addMessage(username, message, id, color) -- external access
 
 local M = {
@@ -24,6 +24,7 @@ local chatMessageBuf = imgui.ArrayChar(256)
 local wasMessageSent = false
 local history = {}
 local historyPos = -1
+local requestInputFocus = false
 
 --- Creates an ImGui ImVec4 color based on the provided RGBA values.
 --- @param r number The red component of the color (0-255).
@@ -31,29 +32,28 @@ local historyPos = -1
 --- @param b number The blue component of the color (0-255).
 --- @param a number The alpha component of the color (0-255).
 --- @return table Returns an ImVec4 color table representing the specified RGB values.
-local function colorByRGB(r, g, b, a)
-    return imgui.ImVec4(r/255, g/255, b/255, a/255)
+local function colorFromRGB(r, g, b, a)
+    return imgui.ImVec4(r / 255, g / 255, b / 255, a / 255)
 end
 
-
 local colorCodes = {
-    ['0'] = colorByRGB(000,000,000,255),
-    ['1'] = colorByRGB(000,000,170,255),
-    ['2'] = colorByRGB(000,170,000,255),
-    ['3'] = colorByRGB(000,170,170,255),
-    ['4'] = colorByRGB(170,000,000,255),
-    ['5'] = colorByRGB(170,000,170,255),
-    ['6'] = colorByRGB(255,170,000,255),
-    ['7'] = colorByRGB(170,170,170,255),
-    ['8'] = colorByRGB(085,085,085,255),
-    ['9'] = colorByRGB(085,085,255,255),
-    ['a'] = colorByRGB(085,255,085,255),
-    ['b'] = colorByRGB(085,255,255,255),
-    ['c'] = colorByRGB(255,085,085,255),
-    ['d'] = colorByRGB(255,085,255,255),
-    ['e'] = colorByRGB(255,255,085,255),
-    ['f'] = colorByRGB(255,255,255,255),
-    ['r'] = colorByRGB(255,255,255,255),
+    ['0'] = colorFromRGB(000,000,000,255),
+    ['1'] = colorFromRGB(000,000,170,255),
+    ['2'] = colorFromRGB(000,170,000,255),
+    ['3'] = colorFromRGB(000,170,170,255),
+    ['4'] = colorFromRGB(170,000,000,255),
+    ['5'] = colorFromRGB(170,000,170,255),
+    ['6'] = colorFromRGB(255,170,000,255),
+    ['7'] = colorFromRGB(170,170,170,255),
+    ['8'] = colorFromRGB(085,085,085,255),
+    ['9'] = colorFromRGB(085,085,255,255),
+    ['a'] = colorFromRGB(085,255,085,255),
+    ['b'] = colorFromRGB(085,255,255,255),
+    ['c'] = colorFromRGB(255,085,085,255),
+    ['d'] = colorFromRGB(255,085,255,255),
+    ['e'] = colorFromRGB(255,255,085,255),
+    ['f'] = colorFromRGB(255,255,255,255),
+    ['r'] = colorFromRGB(255,255,255,255),
 }
 
 --- Converts a text string into a list of colored text segments for use in IMGUI.
@@ -74,11 +74,12 @@ local function textToColorAndText(text, nocolor)
     for i = 1, #text do
         c = text:sub(i,i)
 
-        if(c == " ") then 
+        if c == " " then 
             wasSpace = true
             currentTxt = currentTxt .. c
         else
-            if(not wasSpace) then currentTxt = currentTxt .. c
+            if(not wasSpace) then
+                currentTxt = currentTxt .. c
             else
                 table.insert(txtList, {
                     color = color,
@@ -184,36 +185,15 @@ local inputCallbackC = ffi.cast("ImGuiInputTextCallback", function(data)
     return imgui.Int(0)
 end)
 
---- Clears the chat history.
+
 local function clearHistory()
     log('I', "BeamMP UI", "Cleared chat history")
     history = {}
 end
 
-
---- Sends a chat message.
---- @param message string The message to send.
-local function sendChatMessage(message)
-    if message[0] == 0 then return end
-
-    message = ffi.string(message)
-    -- local messageTable = {
-    --     message = message,
-    --     sentTime = os.time(),
-    --     id = #M.chatMessages + 1
-    -- }
-
-    local c = 'C:'..MPConfig.getNickname()..": "..message
-    MPGameNetwork.send(c)
-    TriggerClientEvent("ChatMessageSent", c)
-
-    wasMessageSent = true
-    history[#history+1] = ffi.string(chatMessageBuf)
-    historyPos = -1
-    ffi.copy(chatMessageBuf, "")
+local function requestFocus()
+    requestInputFocus = true
 end
-
-
 --- Adds a chat message to the chat history and the chat window.
 --- @param username string The username of the sender.
 --- @param message string The message content.
@@ -245,16 +225,39 @@ local function addMessage(username, message, id, color)
     end
 end
 
+--- Sends a chat message.
+--- @param message string The message to send.
+local function sendChatMessage(message)
+    if message[0] == 0 then return end
+
+    message = ffi.string(message)
+
+    if MPCoreNetwork.isMPSession() then
+        local c = 'C:'..MPConfig.getNickname()..": "..message
+        MPGameNetwork.send(c)
+        TriggerClientEvent("ChatMessageSent", c)
+    else
+        local color = {[0] = 255, [1] = 0, [2] = 0, [3] = 255}
+        addMessage("Daniel-W", " " .. message, 0, color) -- because `MPConfig.getNickname()` returns an empty string (only started happening)
+    end
+
+    wasMessageSent = true
+    history[#history+1] = ffi.string(chatMessageBuf)
+    historyPos = -1
+    ffi.copy(chatMessageBuf, "")
+end
 
 local scrollbarVisible = false
 
---- Render the IMGUI windows on each frame.
 local function render()
     local scrollbarSize = imgui.GetStyle().ScrollbarSize
+    local uiScale = UI.settings.window.uiScale
+    local avail = imgui.GetContentRegionAvail()
+    local spaceSize = imgui.CalcTextSize(" ").x
 
-    if imgui.BeginChild1("ChatArea", imgui.ImVec2(0, -imgui.GetTextLineHeightWithSpacing() - heightOffset), false) then
+    if imgui.BeginChild1("##ChatArea", imgui.ImVec2(0, avail.y - (30 * uiScale) + 5 * uiScale), false) then
+        imgui.SetWindowFontScale(uiScale)
         scrollbarVisible = imgui.GetScrollMaxY() > 0
-        local windowWidth = imgui.GetWindowWidth()
         local scrollbarPos = imgui.GetScrollY()
 
         if scrollbarPos >= imgui.GetScrollMaxY() then
@@ -265,80 +268,108 @@ local function render()
             forceBottom = false
         end
 
+        local pos = imgui.GetWindowPos()
+
+        local availX = imgui.GetContentRegionAvail().x
+        local availY = imgui.GetContentRegionAvail().y
+
+        local clipMin = imgui.ImVec2(pos.x, pos.y)
+        local clipMax = imgui.ImVec2(pos.x + availX + 10, pos.y + availY + 10)
+        imgui.PushClipRect(clipMin, clipMax, true)
+
+        -- Debug for viewing the ClipRect
+        -- imgui.ImDrawList_AddRectFilled(imgui.GetWindowDrawList(), clipMin, clipMax, imgui.GetColorU322(imgui.ImVec4(255, 0, 0, 20)))
+
         -- Render Message | Time
         for _, message in ipairs(M.chatMessages) do
-            imgui.Columns(2, "ChatColumns", false)
-            
-            local columnWidth = windowWidth - 42
+            local usernameSizeX = imgui.CalcTextSize(message.username).x
+            local timestampStr = os.date("%H:%M", message.sentTime)
+            local timestampSize = imgui.CalcTextSize(timestampStr).x
+            local columnWidth = availX - timestampSize
+
+            -- Chatbox Column
+            imgui.Columns(2, "##ChatColumns", false)
             
             if scrollbarVisible then
                 columnWidth = columnWidth - scrollbarSize
             end
-            
-            imgui.SetColumnWidth(0, columnWidth)
 
-            columnWidth = columnWidth - 10
+            imgui.SetColumnWidth(0, columnWidth)
             
             if message.color then
-                imgui.TextColored(imgui.ImVec4(message.color[0]/255, message.color[1]/255, message.color[2]/255, message.color[3]/255), message.username)
-                imgui.SameLine()
+                local color = imgui.ImVec4(message.color[0]/255, message.color[1]/255, message.color[2]/255, message.color[3]/255)
+                imgui.TextColored(color, message.username .. ": ")
             else
                 imgui.Text(message.username .. ": ")
-                imgui.SameLine()
             end
+
+            -- Enable word wrapping
+            imgui.PushTextWrapPos(imgui.GetContentRegionAvail().x)
             
-            local currentWidth = imgui.CalcTextSize(message.username .. ": ").x
+            local currentWidth = usernameSizeX + spaceSize
+            imgui.SameLine(currentWidth + spaceSize)
 
-            for _, v in ipairs(message.message) do
-                if (currentWidth + imgui.CalcTextSize(v.text).x <= columnWidth) then imgui.SameLine(currentWidth)
-                else currentWidth = 0 end
-                currentWidth = currentWidth + imgui.CalcTextSize(v.text).x
-                imgui.TextColored(v.color, v.text)
+            for i=2, #message.message do
+                local msg = message.message[i]
+                local textSize = imgui.CalcTextSize(msg.text).x
+
+                if (currentWidth + textSize <= columnWidth) then
+                    imgui.SameLine(currentWidth + spaceSize)
+                else
+                    currentWidth = 0
+                    -- imgui.SameLine(currentWidth + imgui.CalcTextSize(" ").x)
+                end
+
+                currentWidth = currentWidth + textSize
+                imgui.TextColored(msg.color, msg.text)
             end
-
+        
+            -- Disable word wrapping
+            imgui.PopTextWrapPos()
+        
             if scrollToBottom or forceBottom then
                 imgui.SetScrollHereY(1)
             end
-
+        
+            -- Time Column
             imgui.NextColumn()
-            imgui.Text(os.date("%H:%M", message.sentTime))
+            imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetContentRegionAvail().x / 2 - timestampSize / 2)
 
+            imgui.Text(os.date("%H:%M", message.sentTime))
+        
             imgui.Columns(1)
         end
 
+        imgui.PopClipRect()
         imgui.EndChild()
-    end
-
-    if scrollToBottom then
-        scrollToBottom = false
     end
 
     imgui.PushStyleVar2(imgui.StyleVar_FramePadding, imgui.ImVec2(2, 2))
     imgui.PushStyleVar2(imgui.StyleVar_ItemSpacing, imgui.ImVec2(2, 0))
     imgui.PushStyleVar2(imgui.StyleVar_CellPadding, imgui.ImVec2(0, 0))
-    imgui.SetCursorPosY(imgui.GetWindowHeight() - 35)
 
     imgui.PushStyleColor2(imgui.Col_FrameBg, imgui.ImVec4(UI.settings.colors.primaryColor.x, UI.settings.colors.primaryColor.y, UI.settings.colors.primaryColor.z, 1))
 
-    if imgui.BeginChild1("ChatInput", imgui.ImVec2(0, 30), false) then
+    local btnSize = 16 * uiScale
+
+    if imgui.BeginChild1("##ChatInput", imgui.ImVec2(0, 30 * uiScale), false, imgui.WindowFlags_AlwaysAutoResize) then
+        imgui.SetWindowFontScale(1)
         imgui.SetNextItemWidth(imgui.GetWindowWidth() - 25)
         if imgui.InputText("##ChatInputMessage", chatMessageBuf, 256, imgui.InputTextFlags_EnterReturnsTrue + imgui.InputTextFlags_CallbackHistory, inputCallbackC) then
             sendChatMessage(chatMessageBuf)
-            if UI.settings.window.keepActive then
-                imgui.SetKeyboardFocusHere(-1)
-            else
-                imgui.SetKeyboardFocusHere(1)
-            end
+            imgui.SetKeyboardFocusHere(-1)
+        end
+
+        if requestInputFocus then
+            imgui.SetKeyboardFocusHere(-1)
+            requestInputFocus = false
         end
 
         imgui.SameLine()
-        if utils.imageButton(UI.uiIcons.send.texId, 20) then
+
+        if utils.imageButton(UI.uiIcons.send.texId, btnSize) then
             sendChatMessage(chatMessageBuf)
-            if UI.settings.window.keepActive then
-                imgui.SetKeyboardFocusHere(-1)
-            else
-                imgui.SetKeyboardFocusHere(1)
-            end
+            imgui.SetKeyboardFocusHere(1)
         end
 
         imgui.EndChild()
@@ -347,24 +378,33 @@ local function render()
     imgui.PopStyleColor(1)
     imgui.PopStyleVar(3)
 
-    if wasMessageSent then
-        heightOffset = 40
 
-        if not forceBottom then
-            imgui.SetCursorPos(imgui.ImVec2(imgui.GetWindowWidth() - (scrollbarVisible and scrollbarSize or 0) - 24, imgui.GetWindowHeight() - 60))
-            if utils.imageButton(UI.uiIcons.down.texId, 16) then
-                scrollToBottom = true
-                wasMessageSent = false
-            end
-        end
-    else
-        heightOffset = 20
-    end
+    -- ! Figure out why `imageButton` isn't accepting inputs.
+    -- if wasMessageSent then
+    --     heightOffset = 40
+
+    --     if not forceBottom then
+    --         imgui.SetCursorPos(
+    --             imgui.ImVec2(
+    --                 imgui.GetWindowWidth() - (scrollbarVisible and scrollbarSize or 0) - 32,
+    --                 imgui.GetWindowHeight() - 60
+    --             )
+    --         )
+            
+    --         if utils.imageButton(UI.uiIcons.down.texId, btnSize) then
+    --             scrollToBottom = true
+    --             wasMessageSent = false
+    --         end
+    --     end
+    -- else
+    --     heightOffset = 20
+    -- end
 end
 
 M.render = render
 M.sendChatMessage = sendChatMessage
 M.addMessage = addMessage
 M.clearHistory = clearHistory
+M.requestFocus = requestFocus
 
 return M

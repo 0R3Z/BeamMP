@@ -27,22 +27,68 @@ end
 -- ---[ Utility Functions ]------
 -- ------------------------------
 
---- Saves the configuration settings to file.
---- @param settings table The settings to be saved. If not provided, UI.settings will be used.
-local function saveConfig(settings)
-    local jsonData = jsonEncode(settings or UI.settings)
-    local config = io.open("./settings/BeamMP/chat.json", "w")
-    config:write(jsonData)
-    config:close()
+local function renderFooter(btnHeight)
+    if imgui.BeginChild1("##footer", imgui.ImVec2(0, btnHeight), false, imgui.WindowFlags_NoScrollbar) then
+        imgui.SetCursorPosY((imgui.GetContentRegionAvail().y - imgui.GetFrameHeightWithSpacing()) * 0.5)
+
+        if imgui.Button("Reset to default", imgui.ImVec2(0, btnHeight)) then
+            UI.settings = utils.copyTable(UI.defaultSettings)
+            sortedSettings = {}
+            local newSortedSettings = {}
+            for name, category in pairs(UI.defaultSettings) do
+                newSortedSettings[name] = {}
+                for settingName, setting in pairs(category) do
+                    table.insert(newSortedSettings[name], { name = settingName, tab = setting })
+                end
+                table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
+            end
+            sortedSettings = newSortedSettings
+        end
+
+        imgui.SameLine()
+
+        if imgui.Button("Save", imgui.ImVec2(0, btnHeight)) then
+            UI.saveConfig()
+        end
+        imgui.EndChild()
+    end
 end
 
+local function option(label, px, avx, setWidth)
+    setWidth = setWidth or false
 
--- ------------------------------
--- ---[       Tabs        ]------
--- ------------------------------
---- Renders the theming section of the UI.
+    imgui.Text(label)
+    imgui.SameLine()
+    imgui.SetCursorPosX(px)
+
+    if setWidth then
+        local w = imgui.GetWindowWidth()
+        local threshold = 400
+        local capWidth = 400
+
+        local itemWidth = (w <= threshold) and (avx - px) or math.min(avx - px, capWidth)
+        imgui.SetNextItemWidth(itemWidth)
+    end
+end
+
+local function sliderFloat(label, px, avx, value, mi, ma, fmt)
+    fmt = fmt or "%.1f"
+    option(label, px, avx, true)
+    local pOpt = imgui.FloatPtr(value)
+    if imgui.SliderFloat("##" .. label, pOpt, mi, ma, fmt) then
+        value = pOpt[0]
+    end
+    return value
+end
+
+--------------------------------
+-----[       Tabs        ]------
+--------------------------------
 local function renderTheming()
-    if imgui.BeginChild1("Colors", imgui.ImVec2(0, imgui.GetWindowHeight() - 100), false) then
+    local uiScale = UI.settings.window.uiScale
+    local btnHeight = 28 * uiScale
+
+    if imgui.BeginChild1("##tab_color", imgui.ImVec2(0, imgui.GetContentRegionAvail().y - btnHeight - 2), false) then
         for _, setting in pairs(sortedSettings.colors) do
             if #setting.name > longestSettingName then
                 longestSettingName = #setting.name
@@ -52,7 +98,7 @@ local function renderTheming()
 
             imgui.Text(toTitleCase(setting.name))
             imgui.SameLine()
-            imgui.SetCursorPosX(longestSettingName * 8 + 10)
+            imgui.SetCursorPosX((longestSettingName * 8 + 10) * UI.settings.window.uiScale)
             if imgui.ColorEdit3("##" .. setting.name, color, imgui.ColorEditFlags_NoInputs) then
                 UI.settings.colors[setting.name] = imgui.ImVec4(color[0], color[1], color[2], 1)
                 setting.tab = imgui.ImVec4(color[0], color[1], color[2], 1)
@@ -62,63 +108,38 @@ local function renderTheming()
         imgui.EndChild()
     end
 
-    imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
-    if imgui.Button("Reset to default") then
-        UI.settings = utils.copyTable(UI.defaultSettings)
-        sortedSettings = {}
-        local newSortedSettings = {}
-        for name, category in pairs(UI.defaultSettings) do
-            newSortedSettings[name] = {}
-            for settingName, setting in pairs(category) do
-                table.insert(newSortedSettings[name], {name = settingName, tab = setting})
-            end
-            table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
-        end
-        sortedSettings = newSortedSettings
-    end
-
-    imgui.SameLine()
-
-    if imgui.Button("Save") then
-        saveConfig()
-    end
+    renderFooter(btnHeight)
 end
 
---- Renders the general section of the UI.
 local function renderGeneral()
-    if imgui.BeginChild1("General", imgui.ImVec2(0, imgui.GetWindowHeight() - 100), false) then
-        local posx = longestSettingName * 8 + 10
+    local uiScale = UI.settings.window.uiScale
+
+    local btnHeight = 28 * uiScale
+    local mb = 2 -- todo: don't hardcode, use style
+                 -- Daniel-W 20/03/2024: I have no idea what `mb` even means. Margin bottom maybe??
+                 -- TODO: Remove these comments and cleanup
+    if imgui.BeginChild1("##tab_general", imgui.ImVec2(0, imgui.GetContentRegionAvail().y - btnHeight - mb), false, imgui.WindowFlags_AlwaysAutoResize) then
+        local posx = (longestSettingName * 8 + 10) * uiScale
+        local availX = imgui.GetContentRegionAvail().x
 
         -- Inactive Fade
         imgui.Text("Inactive fade")
         imgui.SameLine()
         imgui.SetCursorPosX(posx)
         local pInactiveFade = imgui.BoolPtr(UI.settings.window.inactiveFade)
-        if imgui.Checkbox("##Inactive fade", pInactiveFade) then
+        if imgui.Checkbox("##inactive_fade", pInactiveFade) then
             UI.settings.window.inactiveFade = pInactiveFade[0]
         end
 
-        -- Fade Time
-        imgui.Text("Fade time")
-        imgui.SameLine()
-        imgui.SetCursorPosX(posx)
-        local pFadeTime = imgui.FloatPtr(UI.settings.window.fadeTime)
-        imgui.PushItemWidth(120)
-        if imgui.InputFloat("##Fade time", pFadeTime, 0.1, 1, "%.1f") then
-            if pFadeTime[0] < 0.1 then
-                pFadeTime[0] = 0.1
-            end
-
-            UI.settings.window.fadeTime = pFadeTime[0]
-        end
-        imgui.PopItemWidth()
+        UI.settings.window.fadeTime = sliderFloat("Fade Time", posx, availX, UI.settings.window.fadeTime, 0.1, 10, "%.2f")
+        UI.settings.window.uiScale = sliderFloat("UI Scale", posx, availX, UI.settings.window.uiScale, 0.95, 1.5, "%.2f")
 
         -- Fade when collapsed
         imgui.Text("Fade when collapsed")
         imgui.SameLine()
         imgui.SetCursorPosX(posx)
         local pFadeWhenCollapsed = imgui.BoolPtr(UI.settings.window.fadeWhenCollapsed)
-        if imgui.Checkbox("##Fade when collapsed", pFadeWhenCollapsed) then
+        if imgui.Checkbox("##fade_when_collapsed", pFadeWhenCollapsed) then
             UI.settings.window.fadeWhenCollapsed = pFadeWhenCollapsed[0]
         end
 
@@ -127,45 +148,16 @@ local function renderGeneral()
         imgui.SameLine()
         imgui.SetCursorPosX(posx)
         local pShowOnMessage = imgui.BoolPtr(UI.settings.window.showOnMessage)
-        if imgui.Checkbox("##Show on message", pShowOnMessage) then
+        if imgui.Checkbox("##show_on_message", pShowOnMessage) then
             UI.settings.window.showOnMessage = pShowOnMessage[0]
         end
 
-	--Keep active on Enter
-        imgui.Text("Keep active on Enter")
-        imgui.SameLine()
-        imgui.SetCursorPosX(posx)
-        local pKeepActive = imgui.BoolPtr(UI.settings.window.keepActive)
-        if imgui.Checkbox("##Keep active on Enter", pKeepActive) then
-            UI.settings.window.keepActive = pKeepActive[0]
-        end
-        
         -- Bottom Buttons
         imgui.EndChild()
-
-        imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
-        if imgui.Button("Reset to default") then
-            UI.settings = utils.copyTable(UI.defaultSettings)
-            sortedSettings = {}
-            local newSortedSettings = {}
-            for name, category in pairs(UI.defaultSettings) do
-                newSortedSettings[name] = {}
-                for settingName, setting in pairs(category) do
-                    table.insert(newSortedSettings[name], {name = settingName, tab = setting})
-                end
-                table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
-            end
-            sortedSettings = newSortedSettings
-        end
-
-        imgui.SameLine()
-
-        if imgui.Button("Save") then
-            saveConfig()
-        end
     end
-end
 
+    renderFooter(btnHeight)
+end
 
 local tabs = {
     theming = {
@@ -182,21 +174,29 @@ local tabs = {
 
 local renderTab = renderTheming
 
---- Render the IMGUI elements
 local function render()
     imgui.PushStyleVar1(imgui.StyleVar_FrameRounding, 0)
-    imgui.Separator()
 
     for _, tab in pairs(tabs) do
-        if imgui.Button(tab.name, imgui.ImVec2(imgui.GetWindowWidth() / 2, 23)) then
+        local isActiveTab = (renderTab == tab.render)
+        -- if isActiveTab then
+        --     imgui.PushStyleColor1(imgui.Col_Button)
+        -- end
+
+        if imgui.Button(tab.name, imgui.ImVec2(imgui.GetWindowWidth() / 2, 23 * UI.settings.window.uiScale)) then
             renderTab = tab.render
         end
+
+        -- if isActiveTab then
+        --     imgui.PopStyleColor()
+        -- end
+
         imgui.SameLine()
     end
 
-    imgui.SetCursorPosY(66)
+    imgui.Spacing()
     imgui.Separator()
-    imgui.SetCursorPosY(70)
+    imgui.Spacing()
 
     renderTab()
 end
@@ -218,15 +218,16 @@ local function onInit(settings)
     for name, category in pairs(settings) do
         newSortedSettings[name] = {}
         for settingName, setting in pairs(category) do
-            table.insert(newSortedSettings[name], {name = settingName, tab = setting})
+            table.insert(newSortedSettings[name], { name = settingName, tab = setting })
         end
+        
         table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
     end
+
     sortedSettings = newSortedSettings
 end
 
 M.render = render
 M.onInit = onInit
-M.saveConfig = saveConfig
 
 return M
