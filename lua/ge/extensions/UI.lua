@@ -346,7 +346,11 @@ local function renderWindow()
             -- Player List button
             imgui.SameLine()
             if utils.imageButton(M.uiIcons.user.texId, scaledButtonSize, nil, nil, nil, btnPadding) then
-                collapsed = false
+                if collapsed then
+                    justExpanded = true
+                    collapsed = false
+                end
+
                 currentWindow = windows.playerList
                 windowTitle = "BeamMP Chat (Player List)"
             end
@@ -354,7 +358,11 @@ local function renderWindow()
             -- Settings button
             imgui.SameLine()
             if utils.imageButton(M.uiIcons.settings.texId, scaledButtonSize, nil, nil, nil, btnPadding) then
-                collapsed = false
+                if collapsed then
+                    justExpanded = true
+                    collapsed = false
+                end
+
                 currentWindow = windows.options
                 windowTitle = "BeamMP Chat (Options)"
             end
