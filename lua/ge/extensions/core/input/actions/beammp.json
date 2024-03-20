@@ -37,7 +37,7 @@
         "cat": "beammp",
         "order": 4,
         "ctx": "tlua",
-        "onUp": "if UI then UI.focusChat() end",
+        "onDown": "if UI then UI.focusChat() end",
         "isBasic": true,
         "title": "Focus Chat",
         "desc": "Toggle the chat window and focus on the input box"
