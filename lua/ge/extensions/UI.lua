@@ -374,6 +374,22 @@ local function renderWindow()
     imgui.PopStyleVar(3)
 end
 
+--- Saves the configuration settings to file.
+--- @param settings table The settings to be saved. If not provided, UI.settings will be used.
+local function saveConfig(settings)
+    local jsonData = jsonEncode(settings or UI.settings)
+    local config = io.open("./settings/BeamMP/chat.json", "w")
+
+    -- If we can't write to the file, return the default settings.
+    if not config then
+        log("E", "BeamMPChat", "Failed writing to \"settings/BeamMP/chat.json\", maybe insufficient permissions?")
+        return
+    end
+
+    config:write(jsonData)
+    config:close()
+end
+
 --- This function is used to load the settings and config of the UI (chat)
 local function loadConfig()
     local defaultSettings = deepcopy(M.defaultSettings) -- Use the default ones just in case we need to return early
@@ -432,28 +448,12 @@ local function loadConfig()
     if #findMissingKeys(M.defaultSettings, settings) > 0 then
         log('I', "BeamMP", "Missing one or more settings, resetting config file...")
         M.settings = deepcopy(M.defaultSettings)
-        optionsWindow.saveConfig(M.settings) -- we pass it in because "UI.lua" and "ui/options.lua" depend on eachother,
+        saveConfig(M.settings) -- we pass it in because "UI.lua" and "ui/options.lua" depend on eachother,
                                              -- so instead of doing "UI.options", we pass it in instead.
-        return
+        return settings
     end
 
     return settings
-end
-
---- Saves the configuration settings to file.
---- @param settings table The settings to be saved. If not provided, UI.settings will be used.
-local function saveConfig(settings)
-    local jsonData = jsonEncode(settings or UI.settings)
-    local config = io.open("./settings/BeamMP/chat.json", "w")
-
-    -- If we can't write to the file, return the default settings.
-    if not config then
-        log("E", "BeamMPChat", "Failed writing to \"settings/BeamMP/chat.json\", maybe insufficient permissions?")
-        return
-    end
-
-    config:write(jsonData)
-    config:close()
 end
 
 --- Function is for when the game receives a new chat message from the server. 
