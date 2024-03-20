@@ -29,6 +29,7 @@ local maxWindowOpacity = 0.9
 local windowOpacity = maxWindowOpacity
 local fadeTimer = 0
 local collapsed = false
+local justExpanded = false
 
 M.uiIcons = {
     settings = 0,
@@ -44,7 +45,7 @@ M.uiIcons = {
 M.windowOpen = imgui.BoolPtr(true)
 M.windowFlags = imgui.flags(imgui.WindowFlags_NoDocking, imgui.WindowFlags_NoTitleBar, imgui.WindowFlags_NoScrollbar)
 M.windowCollapsedFlags = M.windowFlags + imgui.flags(imgui.WindowFlags_NoScrollWithMouse, imgui.WindowFlags_NoResize)
-M.windowMinSize = imgui.ImVec2(300, 300)
+M.windowMinSize = imgui.ImVec2(200, 100)
 M.windowPadding = imgui.ImVec2(5, 5)
 
 M.canRender = true
@@ -260,6 +261,9 @@ local function renderWindow()
 
     if collapsed then
         imgui.SetNextWindowSize(imgui.ImVec2(lastSize.x, titlebarHeight))
+    elseif justExpanded then
+        imgui.SetNextWindowSize(lastSize)
+        justExpanded = false
     end
 
     if imgui.Begin("BeamMP Chat", M.windowOpen, (collapsed and M.windowCollapsedFlags or M.windowFlags)) then
@@ -331,15 +335,11 @@ local function renderWindow()
             local buttonStartPos = availWidth - style.ItemSpacing.x - ((scaledButtonSize + style.ItemSpacing.x) * 3)
 
             -- Collapsed button
-            -- imgui.SetCursorPosX(availX - buttonAreaWidth)
             imgui.SetCursorPosX(buttonStartPos)
-            if not collapsed then
-                if utils.imageButton(M.uiIcons.up.texId, scaledButtonSize) then
-                    collapsed = true
-                end
-            else
-                if utils.imageButton(M.uiIcons.down.texId, scaledButtonSize) then
-                    collapsed = false
+            if utils.imageButton(collapsed and M.uiIcons.down.texId or M.uiIcons.up.texId, scaledButtonSize) then
+                collapsed = not collapsed
+                if not collapsed then
+                    justExpanded = true
                 end
             end
 
