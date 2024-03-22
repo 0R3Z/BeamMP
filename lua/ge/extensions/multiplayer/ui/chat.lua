@@ -17,7 +17,6 @@ local utils = require("multiplayer.ui.utils")
 local ffi = require('ffi')
 
 local imgui = ui_imgui
-local heightOffset = 20
 local forceBottom = false
 local scrollToBottom = false
 local chatMessageBuf = imgui.ArrayChar(256)
@@ -304,6 +303,9 @@ local function render()
                 local currentWidth = usernameSizeX + spaceSize
                 imgui.SameLine(currentWidth + spaceSize)
 
+                local copyIdx = -1
+                local endWords = {}
+
                 for i=1, #message.message do
                     local msg = message.message[i]
                     local textSize = imgui.CalcTextSize(msg.text).x
@@ -317,6 +319,42 @@ local function render()
 
                     currentWidth = currentWidth + textSize
                     imgui.TextColored(msg.color, msg.text)
+                    if imgui.IsItemHovered() then
+                        imgui.SetMouseCursor(7)
+                        if imgui.IsItemClicked(0) then
+                            copyIdx = i
+                        end
+                    end
+
+                    -- If we clicked a word to copy, let's start collecting all the words so we don't have to do another iteration to copy everything
+                    if copyIdx ~= -1 then
+                        endWords[#endWords + 1] = msg.text
+                    end
+                end
+
+                -- Copy the missing words
+                if copyIdx ~= -1 then
+                    local fullMessage = ""
+                    if copyIdx > 1 then
+                        local startWords = {}
+                        for i = 1, copyIdx - 1 do
+                            local text = message.message[i].text
+                            startWords[#startWords + 1] = text
+                        end
+
+                        fullMessage = table.concat(startWords)
+                    end
+
+                    fullMessage = fullMessage .. table.concat(endWords)
+                    imgui.SetClipboardText(fullMessage)
+
+                    local mousePos = imgui.GetMousePos()
+                    MPUI.addAnimation("flyout", {
+                        text = "Copied to Clipboard",
+                        pos = mousePos,
+                        fadeoutTime = 1000,
+                        speed = 100
+                    })
                 end
             
                 -- Disable word wrapping

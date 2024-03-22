@@ -36,4 +36,11 @@ M.imageButton = function(texID, size, color, activeColor, hoveredColor)
     return false
 end
 
+--- Dumps an `ImVec2`
+---@param name string Name to prefix
+---@param v2 ImVec2 The vector
+M.dumpVec2 = function(name, v2)
+    log("D", "dumpVec2", name .. ": " .. v2.x .. ", " .. v2.y)
+end
+
 return M

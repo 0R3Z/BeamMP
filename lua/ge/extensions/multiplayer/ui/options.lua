@@ -32,7 +32,7 @@ local function renderFooter(btnHeight)
         imgui.SetCursorPosY((imgui.GetContentRegionAvail().y - imgui.GetFrameHeightWithSpacing()) * 0.5)
 
         if imgui.Button("Reset to default", imgui.ImVec2(0, btnHeight)) then
-            MPUI.settings = deepcopy(MPUI.defaultSettings)
+            MPUI.settings = utils.copyTable(MPUI.defaultSettings)
             sortedSettings = {}
             local newSortedSettings = {}
             for name, category in pairs(MPUI.defaultSettings) do
@@ -49,7 +49,16 @@ local function renderFooter(btnHeight)
 
         if imgui.Button("Save", imgui.ImVec2(0, btnHeight)) then
             MPUI.saveConfig()
+
+            local mousePos = imgui.GetMousePos()
+            MPUI.addAnimation("flyout", {
+                text = "Saved!",
+                pos = mousePos,
+                fadeoutTime = 1000,
+                speed = 100
+            })
         end
+        
         imgui.EndChild()
     end
 end
@@ -174,7 +183,7 @@ local tabs = {
 
 local renderTab = renderTheming
 
-local function render()
+local function render(windowPos)
     imgui.PushStyleVar1(imgui.StyleVar_FrameRounding, 0)
 
     for _, tab in pairs(tabs) do

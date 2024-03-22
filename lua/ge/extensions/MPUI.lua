@@ -84,6 +84,8 @@ local currentWindow = windows.chat
 local lastSize = imgui.ImVec2(0, 0)
 local titlebarHeight = 40
 
+local animationQueue = {}
+
 local pings = {}   -- { 'apple' = 12, 'banana' = 54, 'meow' = 69 }
 local UIqueue = {} -- { editCount = x, show = bool, spawnCount = x }
 local playersString = "" -- "player1,player2,player3"
@@ -265,8 +267,52 @@ local function pushColors(colors)
     return count
 end
 
+local function renderAnimations(rootWindowPos, dt)
+    local drawList = imgui.GetWindowDrawList()
+
+    for i = #animationQueue, 1, -1 do
+        local anim = animationQueue[i]
+        local data = anim[2]
+
+        if anim[1] == "flyout" then
+            local elapsed = os.clock() - data.timeAdded
+            local alpha = 1 - (elapsed / data.fadeoutTime)
+
+            if alpha <= 0 then
+                log("D", "renderAnimations", "Removing: " .. tostring((#animationQueue - i) + 1))
+                table.remove(animationQueue, i)
+            else
+                local color = data.color or imgui.GetColorU322(imgui.ImVec4(1, 1, 1, alpha))
+                local speed = data.speed or 50
+
+                data.pos.y = data.pos.y - dt * speed
+
+                local drawPos = imgui.ImVec2(data.pos.x, data.pos.y)
+                utils.dumpVec2("drawPos", drawPos)
+
+                imgui.ImDrawList_AddText1(drawList, drawPos, color, data.text, nil)
+            end
+        end
+    end
+end
+
+--- Adds an animation to the `animationQueue`
+---@param type string Valid options: flyout
+local function addAnimation(type, data)
+    if type == "flyout" then
+        data.fadeoutTime = (data.fadeoutTime or 2000) / 1000
+        data.timeAdded = os.clock()
+    else
+        log("E", "addAnimation", "Invalid animation: " .. tostring(type))
+    end
+
+    log("D", "addAnimation", "Added animation: " .. dumps(type, data))
+
+    animationQueue[#animationQueue + 1] = { type, data }
+end
+
 --- Render the IMGUI chat window and playerlist windows + the settings for them.
-local function renderWindow()
+local function renderWindow(dt)
     if not configLoaded then return end
 
     imgui.PushStyleVar2(imgui.StyleVar_WindowMinSize, (collapsed and imgui.ImVec2(lastSize.x, 20)) or M.windowMinSize)
@@ -318,6 +364,8 @@ local function renderWindow()
     end
 
     if imgui.Begin("BeamMP Chat", M.windowOpen, (collapsed and M.windowCollapsedFlags or M.windowFlags) + imgui.WindowFlags_NoScrollWithMouse) then
+        local windowPos = imgui.GetWindowPos()
+
         if not collapsed then
             lastSize = imgui.GetWindowSize()
         end
@@ -424,6 +472,8 @@ local function renderWindow()
         end
 
         imgui.PopStyleVar()
+
+        renderAnimations(windowPos, dt)
         imgui.End()
     end
 
@@ -642,9 +692,9 @@ end
 ---@param dt float
 local function onUpdate(dt)
     if not developerMode and (worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession()) then return end
-    renderWindow()
+    renderWindow(dt)
 
-    imgui.ShowDemoWindow()
+    -- imgui.ShowDemoWindow()
 end
 
 M.updateLoading = updateLoading
@@ -667,6 +717,8 @@ M.saveConfig = saveConfig
 M.bringToFront = bringToFront
 M.toggleChat = toggleChat
 M.focusChat = focusChat
+
+M.addAnimation = addAnimation
 
 M.onClientEndMission = onClientEndMission
 M.onExtensionLoaded = onExtensionLoaded
