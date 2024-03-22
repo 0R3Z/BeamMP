@@ -22,48 +22,20 @@ else
 	log('M', 'versionCheck', 'BeamMP is compatible with the current version.')
 end
 
-load("multiplayer/multiplayer")
 setExtensionUnloadMode("multiplayer/multiplayer", "manual")
-
-load("MPDebug")
 setExtensionUnloadMode("MPDebug", "manual")
-
-load("UI")
+setExtensionUnloadMode("MPModManager", "manual")
+setExtensionUnloadMode("MPCoreNetwork", "manual")
+setExtensionUnloadMode("MPConfig", "manual")
+setExtensionUnloadMode("MPGameNetwork", "manual")
+setExtensionUnloadMode("MPVehicleGE", "manual")
+setExtensionUnloadMode("MPInputsGE", "manual")
+setExtensionUnloadMode("MPElectricsGE", "manual")
+setExtensionUnloadMode("positionGE", "manual")
+setExtensionUnloadMode("MPPowertrainGE", "manual")
+setExtensionUnloadMode("MPUpdatesGE", "manual")
+setExtensionUnloadMode("nodesGE", "manual")
 setExtensionUnloadMode("UI", "manual")
 
-load("MPModManager")
-setExtensionUnloadMode("MPModManager", "manual")
-
-load("MPCoreNetwork")
-setExtensionUnloadMode("MPCoreNetwork", "manual")
-
-load("MPConfig")
-setExtensionUnloadMode("MPConfig", "manual")
-
-load("MPGameNetwork")
-setExtensionUnloadMode("MPGameNetwork", "manual")
-
-load("MPVehicleGE")
-setExtensionUnloadMode("MPVehicleGE", "manual")
-
-load("MPInputsGE")
-setExtensionUnloadMode("MPInputsGE", "manual")
-
-load("MPElectricsGE")
-setExtensionUnloadMode("MPElectricsGE", "manual")
-
-load("positionGE")
-setExtensionUnloadMode("positionGE", "manual")
-
-load("MPPowertrainGE")
-setExtensionUnloadMode("MPPowertrainGE", "manual")
-
-load("MPUpdatesGE")
-setExtensionUnloadMode("MPUpdatesGE", "manual")
-
-load("nodesGE")
-setExtensionUnloadMode("nodesGE", "manual")
-
--- load this file last so it can reference the others
-load("MPHelpers")
+-- load this file last so it can reference the other
 setExtensionUnloadMode("MPHelpers", "manual")
