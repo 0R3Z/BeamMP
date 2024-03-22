@@ -4,9 +4,9 @@
 
 --- UI API.
 --- Author of this documentation is Titch
---- @module UI
---- @usage applyElectrics(...) -- internal access
---- @usage UI.handle(...) -- external access
+----@module UI
+----@usage applyElectrics(...) -- internal access
+----@usage UI.handle(...) -- external access
 
 local M = {}
 
@@ -17,6 +17,8 @@ require('/common/extensions/ui/flowgraph/editor_api')(M)
 --=========================================
 -- Variables
 --=========================================
+local developerMode = true
+
 local chatWindow = require("multiplayer.ui.chat")
 local optionsWindow = require("multiplayer.ui.options")
 local playerListWindow = require("multiplayer.ui.playerList")
@@ -87,8 +89,17 @@ local playersString = "" -- "player1,player2,player3"
 
 local chatcounter = 0
 
+local function colorToVec4(rgbTable, opacity)
+    local v4 = ffi.new("ImVec4")
+    v4.x = rgbTable.x
+    v4.y = rgbTable.y
+    v4.z = rgbTable.z
+    v4.w = opacity
+    return v4
+end
+
 --- Updates the loading information/message based on the provided data.
--- @param data string The raw data message containing the code and message.
+---@param data string The raw data message containing the code and message.
 local function updateLoading(data)
 	local code = string.sub(data, 1, 1)
 	local msg = string.sub(data, 2)
@@ -98,7 +109,7 @@ local function updateLoading(data)
 end
 
 --- Prompts the user for auto join confirmation and triggers the AutoJoinConfirmation event.
--- @param data string The message to display in the confirmation prompt.
+---@param data string The message to display in the confirmation prompt.
 local function promptAutoJoinConfirmation(data)
     --print(data)
     guihooks.trigger('AutoJoinConfirmation', {message = data})
@@ -107,9 +118,9 @@ local function promptAutoJoinConfirmation(data)
 end
 
 --- Splits a string into fields using the specified separator.
--- @param s string The string to split.
--- @param sep string (optional) The separator to use. Defaults to a space character.
--- @return table An array containing the split fields.
+---@param s string The string to split.
+---@param sep string (optional) The separator to use. Defaults to a space character.
+---@return table An array containing the split fields.
 local function split(s, sep)
     local fields = {}
 
@@ -121,7 +132,7 @@ local function split(s, sep)
 end
 
 --- Update the players string used to create the player list in the UI when in a session.
--- @param data string
+---@param data string
 local function updatePlayersList(data)
 	playersString = data or playersString
 	local players = split(playersString, ",")
@@ -148,9 +159,16 @@ local function updatePlayersList(data)
 		end
 		table.insert(playerListData, {name = p, formatted_name = username, color = color, id = id})
 	end
-	if not MPCoreNetwork.isMPSession() or tableIsEmpty(players) then return end
-	guihooks.trigger("playerList", jsonEncode(playerListData))
-	guihooks.trigger("playerPings", jsonEncode(pings))
+
+    -- If we're in the main menu and in development mode, don't update the apps since there aren't any.
+    -- This function will manually get called from `onExtensionLoaded` to temporarily populate some data (if development mode)
+    if MPCoreNetwork.isMPSession() then
+        if not developerMode and tableIsEmpty(players) then return end
+
+        guihooks.trigger("playerList", jsonEncode(playerListData))
+        guihooks.trigger("playerPings", jsonEncode(pings))
+    end
+
 	playerListWindow.updatePlayerList(pings) -- Send pings because this is a key-value table that contains name and the ping
 end
 
@@ -160,8 +178,8 @@ local function sendQueue() -- sends queue to UI
 end
 
 --- This function is used to update the edit/spawn queue values for the UI indicator.
--- @param spawnCount number
--- @param editCount number
+---@param spawnCount number
+---@param editCount number
 local function updateQueue( spawnCount, editCount)
 	UIqueue = {spawnCount = spawnCount, editCount = editCount}
 	UIqueue.show = spawnCount+editCount > 0
@@ -169,7 +187,7 @@ local function updateQueue( spawnCount, editCount)
 end
 
 --- Used to set our ping in the top status bar. It also is used in the math for position prediction
--- @param ping number
+---@param ping number
 local function setPing(ping)
 	if tonumber(ping) < 0 then return end -- not connected
 	guihooks.trigger("setPing", ""..ping.." ms")
@@ -179,7 +197,7 @@ end
 
 --- Set the users nickname so that we know what our username was in lua.
 -- Useful in determining who we are 
--- @param name any
+---@param name any
 local function setNickname(name)
 	guihooks.trigger("setNickname", name)
 end
@@ -187,7 +205,7 @@ end
 
 --- Set the server name in the status bar at the top while in session
 -- This is set as part of the joining process automatically
--- @param serverName string
+---@param serverName string
 local function setServerName(serverName)
 	serverName = serverName or (MPCoreNetwork.getCurrentServer() and MPCoreNetwork.getCurrentServer().name)
 	guihooks.trigger("setServerName", serverName)
@@ -196,15 +214,15 @@ end
 
 --- Update the player count in the top status bar when in a server. Should be preformatted
 -- This is set as part of the joining process automatically and is updated during the session
--- @param playerCount string
+---@param playerCount string
 local function setPlayerCount(playerCount)
 	guihooks.trigger("setPlayerCount", playerCount)
 end
 
 
 --- Display a prompt in the top corner as a notification, Good for server related events like joins/leaves
--- @param text string
--- @param type string
+---@param text string
+---@param type string
 local function showNotification(text, type)
 	if type and type == "error" then
 		log('I', 'showNotification', "[UI Error] > "..tostring(text))
@@ -218,7 +236,7 @@ local function showNotification(text, type)
 end
 
 --- Show a UI dialog / alert box to inform the user of something.
--- @param options any
+---@param options any
 local function showMdDialog(options)
 	guihooks.trigger("showMdDialog", options)
 end
@@ -226,6 +244,25 @@ end
 -- -------------------------------------------------------------
 -- ----------------------- Chat Stuff --------------------------
 -- -------------------------------------------------------------
+
+--- Pushes multiple ImGui colors `{ImGuiCol, Vec4}` and returns the amount pushed
+---@param colors table
+---@return pushedCount number
+local function pushColors(colors)
+    local count = 0
+
+    for _, color in ipairs(colors) do
+        local id = color[1]
+        if not id then
+            log("E", "BeamMPChat", "Invalid color passed into \"pushColors\", ignoring")
+        else
+            imgui.PushStyleColor2(id, color[2])
+            count = count + 1
+        end
+    end
+
+    return count
+end
 
 --- Render the IMGUI chat window and playerlist windows + the settings for them.
 local function renderWindow()
@@ -236,27 +273,39 @@ local function renderWindow()
     imgui.PushStyleVar2(imgui.StyleVar_WindowPadding, M.windowPadding)
     imgui.PushStyleVar1(imgui.StyleVar_WindowBorderSize, 0)
 
-    imgui.PushStyleColor2(imgui.Col_WindowBg, imgui.ImVec4(M.settings.colors.windowBackground.x, M.settings.colors.windowBackground.y, M.settings.colors.windowBackground.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_CheckMark, imgui.ImVec4(M.settings.colors.buttonActive.x, M.settings.colors.buttonActive.y, M.settings.colors.buttonActive.z, windowOpacity))
+    local colors = M.settings.colors
+    local colorCount = pushColors({
+        -- Slider
+        { imgui.Col_SliderGrab,            colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_SliderGrabActive,      colorToVec4(colors.secondaryColor,   windowOpacity) },
 
-    imgui.PushStyleColor2(imgui.Col_Button, imgui.ImVec4(M.settings.colors.buttonBackground.x, M.settings.colors.buttonBackground.y, M.settings.colors.buttonBackground.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ButtonHovered, imgui.ImVec4(M.settings.colors.buttonHovered.x, M.settings.colors.buttonHovered.y, M.settings.colors.buttonHovered.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ButtonActive, imgui.ImVec4(M.settings.colors.buttonActive.x, M.settings.colors.buttonActive.y, M.settings.colors.buttonActive.z, windowOpacity))
+        -- Resize Grip
+        { imgui.Col_ResizeGrip,            colorToVec4(colors.primaryColor,     windowOpacity) },
+        { imgui.Col_ResizeGripHovered,     colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_ResizeGripActive,      colorToVec4(colors.secondaryColor,   windowOpacity) },
 
-    imgui.PushStyleColor2(imgui.Col_Text, imgui.ImVec4(M.settings.colors.textColor.x, M.settings.colors.textColor.y, M.settings.colors.textColor.z, windowOpacity))
+        -- Scrollbar
+        { imgui.Col_ScrollbarBg,           colorToVec4(colors.primaryColor,     windowOpacity) },
+        { imgui.Col_ScrollbarGrab,         colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_ScrollbarGrabHovered,  colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_ScrollbarGrabActive,   colorToVec4(colors.secondaryColor,   windowOpacity) },
 
-    imgui.PushStyleColor2(imgui.Col_ResizeGrip, imgui.ImVec4(M.settings.colors.primaryColor.x, M.settings.colors.primaryColor.y, M.settings.colors.primaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ResizeGripHovered, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ResizeGripActive, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+        -- Secondary Colors
+        { imgui.Col_TextSelectedBg,        colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_Separator,             colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_SeparatorHovered,      colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_SeparatorActive,       colorToVec4(colors.secondaryColor,   windowOpacity) },
 
-    imgui.PushStyleColor2(imgui.Col_Separator, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_SeparatorHovered, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_SeparatorActive, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+        -- Other Colors
+        { imgui.Col_WindowBg,              colorToVec4(colors.windowBackground, windowOpacity) },
+        { imgui.Col_CheckMark,             colorToVec4(colors.buttonActive,     windowOpacity) },
+        { imgui.Col_Text,                  colorToVec4(colors.textColor,        windowOpacity) },
 
-    imgui.PushStyleColor2(imgui.Col_ScrollbarBg, imgui.ImVec4(M.settings.colors.primaryColor.x, M.settings.colors.primaryColor.y, M.settings.colors.primaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ScrollbarGrab, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ScrollbarGrabHovered, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ScrollbarGrabActive, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+        -- Button Colors
+        { imgui.Col_Button,                colorToVec4(colors.buttonBackground, windowOpacity) },
+        { imgui.Col_ButtonHovered,         colorToVec4(colors.buttonHovered,    windowOpacity) },
+        { imgui.Col_ButtonActive,          colorToVec4(colors.buttonActive,     windowOpacity) }
+    })
 
     local uiScale = M.settings.window.uiScale
 
@@ -379,12 +428,12 @@ local function renderWindow()
         imgui.End()
     end
 
-    imgui.PopStyleColor(16)
+    imgui.PopStyleColor(colorCount)
     imgui.PopStyleVar(3)
 end
 
 --- Saves the configuration settings to file.
---- @param settings table The settings to be saved. If not provided, UI.settings will be used.
+----@param settings table The settings to be saved. If not provided, UI.settings will be used.
 local function saveConfig(settings)
     local jsonData = jsonEncode(settings or UI.settings)
     local config = io.open("./settings/BeamMP/chat.json", "w")
@@ -469,7 +518,7 @@ end
 
 --- Function is for when the game receives a new chat message from the server. 
 -- This is for handling the raw chat message
--- @param rawMessage string The raw chat message with header codes
+---@param rawMessage string The raw chat message with header codes
 local function chatMessage(rawMessage) -- chat message received (angular)
     local message = string.sub(rawMessage, 2)
 
@@ -503,7 +552,7 @@ end
 
 
 --- Sends a chat message to the server for viewing by other players.
--- @param msg string The chat message typed by the user
+---@param msg string The chat message typed by the user
 local function chatSend(msg)
 	local c = 'C:'..MPConfig.getNickname()..": "..msg
 	MPGameNetwork.send(c)
@@ -535,14 +584,14 @@ local function focusChat()
 end
 
 --- This function is for mapping player pings to names for the playerlist
--- @param playerName string The player name
--- @param ping number The players ping
+---@param playerName string The player name
+---@param ping number The players ping
 local function setPlayerPing(playerName, ping)
 	pings[playerName] = ping
 end
 
 --- Executes when the user or mod ends a mission/session (map) .
--- @param mission table The mission object.
+---@param mission table The mission object.
 local function onClientEndMission()
     pings = {}
     chatWindow.chatMessages = {}
@@ -550,7 +599,6 @@ local function onClientEndMission()
 end
 
 --- Triggered by BeamNG when the lua mod is loaded by the modmanager system.
--- We use this to load our UI and config
 local function onExtensionLoaded()
     M.settings = loadConfig()
     if M.settings then
@@ -579,22 +627,22 @@ local function onExtensionLoaded()
 
         ::continue::
     end
+
+    -- If we're in dev mode, just update the playerlist data so we can develop it in the main menu to make life easier
+    if developerMode then
+        pings = {["Daniel-W"] = 1}   -- { 'apple' = 12, 'banana' = 54, 'meow' = 69 }
+        updatePlayersList("Daniel-W")
+    end
 end
 
 --- onUpdate is a game eventloop function. It is called each frame by the game engine.
 -- This is the main processing thread of BeamMP in the game
--- @param dt float
+---@param dt float
 local function onUpdate(dt)
-    if worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession() then return end
+    if not developerMode and (worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession()) then return end
     renderWindow()
-end
 
--- dev
-M.reload = function()
-    chatWindow = require("multiplayer.ui.chat")
-    optionsWindow = require("multiplayer.ui.options")
-    playerListWindow = require("multiplayer.ui.playerList")
-    extensions.reload("UI")
+    -- imgui.ShowDemoWindow()
 end
 
 M.updateLoading = updateLoading
