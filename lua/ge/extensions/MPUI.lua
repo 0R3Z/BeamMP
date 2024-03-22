@@ -317,7 +317,7 @@ local function renderWindow()
         justExpanded = false
     end
 
-    if imgui.Begin("BeamMP Chat", M.windowOpen, (collapsed and M.windowCollapsedFlags or M.windowFlags)) then
+    if imgui.Begin("BeamMP Chat", M.windowOpen, (collapsed and M.windowCollapsedFlags or M.windowFlags) + imgui.WindowFlags_NoScrollWithMouse) then
         if not collapsed then
             lastSize = imgui.GetWindowSize()
         end
