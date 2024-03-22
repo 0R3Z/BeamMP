@@ -187,7 +187,7 @@ end)
 
 
 local function clearHistory()
-    log('I', "BeamMP UI", "Cleared chat history")
+    log("I", "clearHistory", "Cleared chat history")
     history = {}
 end
 
@@ -242,7 +242,7 @@ local function sendChatMessage(message)
     end
 
     wasMessageSent = true
-    history[#history+1] = ffi.string(chatMessageBuf)
+    history[#history + 1] = ffi.string(chatMessageBuf)
     historyPos = -1
     ffi.copy(chatMessageBuf, "")
 end
@@ -250,7 +250,9 @@ end
 local scrollbarVisible = false
 
 local function render()
-    local scrollbarSize = imgui.GetStyle().ScrollbarSize
+    local style = imgui.GetStyle()
+
+    local scrollbarSize = style.ScrollbarSize
     local uiScale = MPUI.settings.window.uiScale
     local avail = imgui.GetContentRegionAvail()
     local spaceSize = imgui.CalcTextSize(" ").x
@@ -354,7 +356,10 @@ local function render()
 
     if imgui.BeginChild1("##ChatInput", imgui.ImVec2(0, 30 * uiScale), false, imgui.WindowFlags_AlwaysAutoResize) then
         imgui.SetWindowFontScale(1)
-        imgui.SetNextItemWidth(imgui.GetWindowWidth() - 25)
+
+        local spaceFromRight = btnSize + (style.ItemSpacing.x + 4)
+        imgui.SetNextItemWidth(imgui.GetContentRegionAvail().x - spaceFromRight)
+        
         if imgui.InputText("##ChatInputMessage", chatMessageBuf, 256, imgui.InputTextFlags_EnterReturnsTrue + imgui.InputTextFlags_CallbackHistory, inputCallbackC) then
             sendChatMessage(chatMessageBuf)
             imgui.SetKeyboardFocusHere(-1)
