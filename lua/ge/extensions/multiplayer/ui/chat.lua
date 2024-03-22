@@ -322,10 +322,6 @@ local function render()
                 -- Disable word wrapping
                 imgui.PopTextWrapPos()
             
-                if scrollToBottom or forceBottom then
-                    imgui.SetScrollHereY(1)
-                end
-            
                 -- Time Column
                 imgui.NextColumn()
                 imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetContentRegionAvail().x / 2 - timestampSize / 2)
@@ -338,6 +334,7 @@ local function render()
 
         if scrollToBottom or forceBottom then
             imgui.SetScrollHereY(1)
+            scrollToBottom = false
         end
 
         imgui.ImGuiListClipper_End(clipper)
@@ -358,6 +355,11 @@ local function render()
         imgui.SetWindowFontScale(1)
 
         local spaceFromRight = btnSize + (style.ItemSpacing.x + 4)
+        if wasMessageSent and not forceBottom then
+            -- Make room for the extra icon
+            spaceFromRight = spaceFromRight * 2
+        end
+
         imgui.SetNextItemWidth(imgui.GetContentRegionAvail().x - spaceFromRight)
         
         if imgui.InputText("##ChatInputMessage", chatMessageBuf, 256, imgui.InputTextFlags_EnterReturnsTrue + imgui.InputTextFlags_CallbackHistory, inputCallbackC) then
@@ -377,33 +379,20 @@ local function render()
             imgui.SetKeyboardFocusHere(1)
         end
 
+        if wasMessageSent and not forceBottom then
+            imgui.SameLine()
+
+            if utils.imageButton(MPUI.uiIcons.down.texId, btnSize) then
+                scrollToBottom = true
+                wasMessageSent = false
+            end
+        end
+
         imgui.EndChild()
     end
 
     imgui.PopStyleColor(1)
     imgui.PopStyleVar(3)
-
-
-    -- ! Figure out why `imageButton` isn't accepting inputs.
-    -- if wasMessageSent then
-    --     heightOffset = 40
-
-    --     if not forceBottom then
-    --         imgui.SetCursorPos(
-    --             imgui.ImVec2(
-    --                 imgui.GetWindowWidth() - (scrollbarVisible and scrollbarSize or 0) - 32,
-    --                 imgui.GetWindowHeight() - 60
-    --             )
-    --         )
-            
-    --         if utils.imageButton(MPUI.uiIcons.down.texId, btnSize) then
-    --             scrollToBottom = true
-    --             wasMessageSent = false
-    --         end
-    --     end
-    -- else
-    --     heightOffset = 20
-    -- end
 end
 
 M.render = render
