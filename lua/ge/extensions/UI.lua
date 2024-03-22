@@ -401,7 +401,6 @@ end
 --- This function is used to load the settings and config of the UI (chat)
 local function loadConfig()
     local defaultSettings = deepcopy(M.defaultSettings) -- Use the default ones just in case we need to return early
-
     local config = io.open("./settings/BeamMP/chat.json", "r")
 
     -- If the config doesn't exist, create a new one
@@ -421,10 +420,16 @@ local function loadConfig()
         config:write(jsonData)
         config:close()
 
-        log("I", "chat", "Default config created")
+        log("I", "BeamMPChat", "Default config created")
     end
 
     -- Read config
+    config = io.open("./settings/BeamMP/chat.json", "r")
+    if not config then
+        log("E", "BeamMPChat", "Failed reading \"settings/BeamMP/chat.json\"")
+        return defaultSettings
+    end
+
     local jsonData = config:read("*all")
     config:close()
 
@@ -451,14 +456,11 @@ local function loadConfig()
         return missing
     end
 
-    configLoaded = true
-
     if #findMissingKeys(M.defaultSettings, settings) > 0 then
         log('I', "BeamMP", "Missing one or more settings, resetting config file...")
-        M.settings = deepcopy(M.defaultSettings)
-        saveConfig(M.settings) -- we pass it in because "UI.lua" and "ui/options.lua" depend on eachother,
+        settings = deepcopy(M.defaultSettings)
+        saveConfig(settings) -- we pass it in because "UI.lua" and "ui/options.lua" depend on eachother,
                                              -- so instead of doing "UI.options", we pass it in instead.
-        return settings
     end
 
     return settings
@@ -550,6 +552,10 @@ end
 -- We use this to load our UI and config
 local function onExtensionLoaded()
     M.settings = loadConfig()
+    if M.settings then
+        configLoaded = true
+    end
+
     optionsWindow.onInit(M.settings)
 
     for k, _ in pairs(M.uiIcons) do
