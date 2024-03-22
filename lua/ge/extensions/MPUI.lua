@@ -9,6 +9,7 @@
 ----@usage MPUI.handle(...) -- external access
 
 local M = {}
+M.dependencies = { "MPCoreNetwork", "MPVehicleGE" }
 
 local imgui = ui_imgui
 local imu = require('ui/imguiUtils')
