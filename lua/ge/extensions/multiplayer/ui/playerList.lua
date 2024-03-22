@@ -43,7 +43,7 @@ local function render()
     if imgui.BeginChild1("PlayerList", imgui.ImVec2(0, 0), false) then
         for _, player in ipairs(players) do
             local name = player[1]
-            local ping = player[2]
+            local ping = tostring(player[2])
 
             imgui.SetCursorPosX((imgui.GetWindowWidth() - imgui.CalcTextSize(name).x) / 4)
             imgui.Text(name)
