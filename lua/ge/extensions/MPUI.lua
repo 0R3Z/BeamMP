@@ -254,7 +254,7 @@ local function pushColors(colors)
     for _, color in ipairs(colors) do
         local id = color[1]
         if not id then
-            log("E", "BeamMPChat", "Invalid color passed into \"pushColors\", ignoring")
+            log("E", "pushColors", "Invalid color passed into \"pushColors\", ignoring")
         else
             imgui.PushStyleColor2(id, color[2])
             count = count + 1
@@ -440,7 +440,7 @@ local function saveConfig(settings)
 
     -- If we can't write to the file, return the default settings.
     if not config then
-        log("E", "BeamMPChat", "Failed writing to \"settings/BeamMP/chat.json\", maybe insufficient permissions?")
+        log("E", "saveConfig", "Failed writing to \"settings/BeamMP/chat.json\", maybe insufficient permissions?")
         return
     end
 
@@ -455,28 +455,28 @@ local function loadConfig()
 
     -- If the config doesn't exist, create a new one
     if not config then
-        log("I", "chat", "No config found, creating default")
+        log("I", "loadConfig", "No config found, creating default")
 
         local jsonData = jsonEncode(M.defaultSettings)
         config = io.open("./settings/BeamMP/chat.json", "w")
 
         -- If we can't write to the file, return the default settings.
         if not config then
-            log("E", "BeamMPChat", "Failed creating \"settings/BeamMP/chat.json\", maybe insufficient permissions?")
-            log("W", "BeamMPChat", "Using default settings")
+            log("E", "loadConfig", "Failed creating \"settings/BeamMP/chat.json\", maybe insufficient permissions?")
+            log("W", "loadConfig", "Using default settings")
             return defaultSettings
         end
 
         config:write(jsonData)
         config:close()
 
-        log("I", "BeamMPChat", "Default config created")
+        log("I", "loadConfig", "Default config created")
     end
 
     -- Read config
     config = io.open("./settings/BeamMP/chat.json", "r")
     if not config then
-        log("E", "BeamMPChat", "Failed reading \"settings/BeamMP/chat.json\"")
+        log("E", "loadConfig", "Failed reading \"settings/BeamMP/chat.json\"")
         return defaultSettings
     end
 
@@ -485,7 +485,7 @@ local function loadConfig()
 
     local settings = jsonDecode(jsonData)
     if not settings then
-        log("E", "BeamMPChat", "Failed to decode config file, using default.")
+        log("E", "loadConfig", "Failed to decode config file, using default.")
         return defaultSettings
     end
 
@@ -507,7 +507,7 @@ local function loadConfig()
     end
 
     if #findMissingKeys(M.defaultSettings, settings) > 0 then
-        log('I', "BeamMP", "Missing one or more settings, resetting config file...")
+        log('I', "loadConfig", "Missing one or more settings, resetting config file...")
         settings = deepcopy(M.defaultSettings)
         saveConfig(settings) -- we pass it in because "MPUI.lua" and "ui/options.lua" depend on eachother,
                                              -- so instead of doing "MPUI.options", we pass it in instead.
@@ -605,6 +605,8 @@ local function onExtensionLoaded()
         configLoaded = true
     end
 
+    log("I", "onExtensionLoaded", "Config Loaded!")
+
     optionsWindow.onInit(M.settings)
 
     for k, _ in pairs(M.uiIcons) do
@@ -616,13 +618,13 @@ local function onExtensionLoaded()
         M.uiIcons[k] = texObj
 
         if not FS:fileExists(path) then
-            log("E", "MPInterface", "Missing icon: " .. k)
+            log("E", "onExtensionLoaded", "Missing icon: " .. k)
             goto continue
         end
 
         -- Ensure the texture gets loaded correctly
         if texObj.texId == nil then
-            log("E", "MPInterface", "Failed loading icon: " .. k)
+            log("E", "onExtensionLoaded", "Failed loading icon: " .. k)
         end
 
         ::continue::
