@@ -839,7 +839,7 @@ local function checkIfVehiclenameInvalid(vehicleName, playerName, v) -- TODO: fi
 	end
 
 	log('W', 'applyVehSpawn', "The received vehicle "..vehicleName.." is not valid, cancelling the spawn (likely a missing mod)")
-	if playerName then UI.showNotification("Player "..playerName.." spawned an illegal vehicle ("..vehicleName.."), it was skipped") end
+	if playerName then MPUI.showNotification("Player "..playerName.." spawned an illegal vehicle ("..vehicleName.."), it was skipped") end
 	return true
 end
 
@@ -1242,13 +1242,13 @@ local function onServerVehicleSpawned(playerRole, playerNickname, serverVehicleI
 
 			vehicles[serverVehicleID].spawnQueue = eventdata
 
-			UI.updateQueue(getQueueCounts())
-			UI.showNotification('Spawn received and queued for '..playerNickname)
+			MPUI.updateQueue(getQueueCounts())
+			MPUI.showNotification('Spawn received and queued for '..playerNickname)
 		else
 			log("I", "onServerVehicleSpawned", "Queue disabled, spawning vehicle now")
 
 			applyVehSpawn(eventdata)
-			UI.updateQueue(0, 0)
+			MPUI.updateQueue(0, 0)
 		end
 	end
 end
@@ -1269,13 +1269,13 @@ local function onServerVehicleEdited(serverID, data)
 
 		log('I', 'onServerVehicleEdited', "edit "..serverID.." queued")
 		local playerNickname = owner and owner.name or "unknown"
-		UI.updateQueue(getQueueCounts())
-		UI.showNotification('Edit received and queued for '..playerNickname)
+		MPUI.updateQueue(getQueueCounts())
+		MPUI.showNotification('Edit received and queued for '..playerNickname)
 	else
 		local currentVeh = be:getPlayerVehicle(0) -- Camera fix
 
 		applyVehEdit(serverID, data)
-		UI.updateQueue(0, 0)
+		MPUI.updateQueue(0, 0)
 
 		if currentVeh then be:enterVehicle(0, currentVeh) end -- Camera fix
 	end
@@ -1292,7 +1292,7 @@ local function onServerVehicleRemoved(serverVehicleID)
 	if vehicle.spawnQueue then
 		log('W', "onServerVehicleRemoved", "Vehicle "..serverVehicleID.." is still in the queue, removing from there")
 		vehicle:delete()
-		UI.updateQueue(getQueueCounts())
+		MPUI.updateQueue(getQueueCounts())
 		return
 	end
 
@@ -1618,7 +1618,7 @@ local function focusCameraOnPlayer(targetName)
 end
 
 local function applyQueuedEvents()
-	UI.updateQueue(getQueueCounts())
+	MPUI.updateQueue(getQueueCounts())
 
 	for serverVehicleID, vehicle in pairs(vehicles) do
 		if vehicle.spawnQueue then
@@ -1633,7 +1633,7 @@ local function applyQueuedEvents()
 		end
 	end
 
-	UI.updateQueue(getQueueCounts())
+	MPUI.updateQueue(getQueueCounts())
 	--if currentVeh then be:enterVehicle(0, currentVeh) print("entered "..currentVeh:getJBeamFilename()) end -- Camera fix
 end
 
@@ -1966,7 +1966,7 @@ end
 
 
 local function onUIInitialised()
-	UI.updateQueue(getQueueCounts())
+	MPUI.updateQueue(getQueueCounts())
 end
 
 local function onExtensionLoaded()

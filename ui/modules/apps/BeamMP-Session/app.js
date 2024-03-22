@@ -18,8 +18,8 @@ app.directive('multiplayersession', [function () {
 
 app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 	$scope.init = function() {
-		bngApi.engineLua('UI.setServerName()'); // request server name
-		bngApi.engineLua('UI.sendQueue()'); // request queue data
+		bngApi.engineLua('MPUI.setServerName()'); // request server name
+		bngApi.engineLua('MPUI.sendQueue()'); // request queue data
 		//TODO: ping request to instantly populate the player count
 	};
 

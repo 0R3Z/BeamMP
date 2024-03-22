@@ -182,7 +182,7 @@ local function logout()
 	loggedIn = false
 end
 
---- Sends the current player and server count plus the mod and launcher version to the CEF UI.
+--- Sends the current player and server count plus the mod and launcher version to the CEF MPUI.
 -- @usage MPCoreNetwork.sendBeamMPInfo()
 local function sendBeamMPInfo()
 	local servers = jsonDecode(serverList)
@@ -341,7 +341,7 @@ local function loadLevel(map)
 		return
 	end
 	if not core_levels.expandMissionFileName(map) then --and not parsedMapName then
-		UI.updateLoading("lMap "..map.." not found. Check your server config.")
+		MPUI.updateLoading("lMap "..map.." not found. Check your server config.")
 		status = ""
 		M.leaveServer()
 		return
@@ -385,7 +385,7 @@ local function leaveServer(goBack)
 	loadMods = false
 	currentServer = nil
 	status = "" -- Reset status
-	UI.updateLoading("")
+	MPUI.updateLoading("")
 	MPGameNetwork.disconnectLauncher()
 	MPVehicleGE.onDisconnect()
 	local callback = nop
@@ -421,10 +421,10 @@ local function requestMap()
 end
 
 --- Handles the update of the loading UI and performs necessary actions based on the received parameters.
--- @param params string The parameters received for updating the loading UI.
+-- @param params string The parameters received for updating the loading MPUI.
 -- @usage MPCoreNetwork.handleU('lstart')
 local function handleU(params)
-	UI.updateLoading(params)
+	MPUI.updateLoading(params)
 	local code = string.sub(params, 1, 1)
 	local data = string.sub(params, 2)
 	if code == "l" then
@@ -439,7 +439,7 @@ local function handleU(params)
 		--	leaveServer(false) -- reset session variables
 		--end
 	elseif code == "p" and isMpSession then
-		UI.setPing(data.."")
+		MPUI.setPing(data.."")
 		positionGE.setPing(data)
 	end
 end
@@ -448,7 +448,7 @@ end
 -- @param params string The parameters received for auto join confirmation.
 -- @usage MPCoreNetwork.promptAutoJoin(`...`)
 local function promptAutoJoin(params)
-	UI.promptAutoJoinConfirmation(params)
+	MPUI.promptAutoJoinConfirmation(params)
 end
 
 -- VV============= EVENTS =============VV

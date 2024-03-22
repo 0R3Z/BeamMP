@@ -2,11 +2,11 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- UI API.
+--- MPUI API.
 --- Author of this documentation is Titch
-----@module UI
+----@module MPUI
 ----@usage applyElectrics(...) -- internal access
-----@usage UI.handle(...) -- external access
+----@usage MPUI.handle(...) -- external access
 
 local M = {}
 
@@ -433,9 +433,9 @@ local function renderWindow()
 end
 
 --- Saves the configuration settings to file.
-----@param settings table The settings to be saved. If not provided, UI.settings will be used.
+----@param settings table The settings to be saved. If not provided, MPUI.settings will be used.
 local function saveConfig(settings)
-    local jsonData = jsonEncode(settings or UI.settings)
+    local jsonData = jsonEncode(settings or MPUI.settings)
     local config = io.open("./settings/BeamMP/chat.json", "w")
 
     -- If we can't write to the file, return the default settings.
@@ -509,8 +509,8 @@ local function loadConfig()
     if #findMissingKeys(M.defaultSettings, settings) > 0 then
         log('I', "BeamMP", "Missing one or more settings, resetting config file...")
         settings = deepcopy(M.defaultSettings)
-        saveConfig(settings) -- we pass it in because "UI.lua" and "ui/options.lua" depend on eachother,
-                                             -- so instead of doing "UI.options", we pass it in instead.
+        saveConfig(settings) -- we pass it in because "MPUI.lua" and "ui/options.lua" depend on eachother,
+                                             -- so instead of doing "MPUI.options", we pass it in instead.
     end
 
     return settings

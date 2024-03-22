@@ -3,7 +3,7 @@
         "cat": "beammp",
         "order": 0,
         "ctx": "tlua",
-        "onUp": "if UI then UI.bringToFront() end",
+        "onUp": "if MPUI then MPUI.bringToFront() end",
         "isBasic": true,
         "title": "Bring to Front",
         "desc": "Bring the chat window to the front"
@@ -28,7 +28,7 @@
         "cat": "beammp",
         "order": 3,
         "ctx": "tlua",
-        "onUp": "if UI then UI.toggleChat() end",
+        "onUp": "if MPUI then MPUI.toggleChat() end",
         "isBasic": true,
         "title": "Toggle Chat",
         "desc": "Toggle the chat window"
@@ -37,7 +37,7 @@
         "cat": "beammp",
         "order": 4,
         "ctx": "tlua",
-        "onDown": "if UI then UI.focusChat() end",
+        "onDown": "if MPUI then MPUI.focusChat() end",
         "isBasic": true,
         "title": "Focus Chat",
         "desc": "Toggle the chat window and focus on the input box"

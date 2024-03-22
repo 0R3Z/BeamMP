@@ -35,7 +35,7 @@ setExtensionUnloadMode("positionGE", "manual")
 setExtensionUnloadMode("MPPowertrainGE", "manual")
 setExtensionUnloadMode("MPUpdatesGE", "manual")
 setExtensionUnloadMode("nodesGE", "manual")
-setExtensionUnloadMode("UI", "manual")
+setExtensionUnloadMode("MPUI", "manual")
 
 -- load this file last so it can reference the other
 setExtensionUnloadMode("MPHelpers", "manual")

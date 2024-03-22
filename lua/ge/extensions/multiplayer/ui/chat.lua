@@ -216,8 +216,8 @@ local function addMessage(username, message, id, color)
 
     table.insert(M.chatMessages, messageTable)
 
-    if UI.settings.window.showOnMessage then
-        UI.bringToFront()
+    if MPUI.settings.window.showOnMessage then
+        MPUI.bringToFront()
     end
 
     if not forceBottom and username ~= MPConfig:getNickname() then
@@ -251,7 +251,7 @@ local scrollbarVisible = false
 
 local function render()
     local scrollbarSize = imgui.GetStyle().ScrollbarSize
-    local uiScale = UI.settings.window.uiScale
+    local uiScale = MPUI.settings.window.uiScale
     local avail = imgui.GetContentRegionAvail()
     local spaceSize = imgui.CalcTextSize(" ").x
 
@@ -348,7 +348,7 @@ local function render()
     imgui.PushStyleVar2(imgui.StyleVar_ItemSpacing, imgui.ImVec2(2, 0))
     imgui.PushStyleVar2(imgui.StyleVar_CellPadding, imgui.ImVec2(0, 0))
 
-    imgui.PushStyleColor2(imgui.Col_FrameBg, imgui.ImVec4(UI.settings.colors.primaryColor.x, UI.settings.colors.primaryColor.y, UI.settings.colors.primaryColor.z, 1))
+    imgui.PushStyleColor2(imgui.Col_FrameBg, imgui.ImVec4(MPUI.settings.colors.primaryColor.x, MPUI.settings.colors.primaryColor.y, MPUI.settings.colors.primaryColor.z, 1))
 
     local btnSize = 16 * uiScale
 
@@ -367,7 +367,7 @@ local function render()
 
         imgui.SameLine()
 
-        if utils.imageButton(UI.uiIcons.send.texId, btnSize) then
+        if utils.imageButton(MPUI.uiIcons.send.texId, btnSize) then
             sendChatMessage(chatMessageBuf)
             imgui.SetKeyboardFocusHere(1)
         end
@@ -391,7 +391,7 @@ local function render()
     --             )
     --         )
             
-    --         if utils.imageButton(UI.uiIcons.down.texId, btnSize) then
+    --         if utils.imageButton(MPUI.uiIcons.down.texId, btnSize) then
     --             scrollToBottom = true
     --             wasMessageSent = false
     --         end

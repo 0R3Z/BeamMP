@@ -118,10 +118,10 @@ local function sessionData(data)
 	local data = string.sub(data, 2)
 	if code == "s" then
 		local playerCount, playerList = string.match(data, "^(%d+%/%d+)%:(.*)") -- 1/10:player1,player2
-		UI.setPlayerCount(playerCount)
-		UI.updatePlayersList(playerList)
+		MPUI.setPlayerCount(playerCount)
+		MPUI.updatePlayersList(playerList)
 	elseif code == "n" then
-		UI.setNickname(data)
+		MPUI.setNickname(data)
 		MPConfig.setNickname(data)
 	end
 end
@@ -133,7 +133,7 @@ local function quitMP(reason)
 	local text = reason~="" and ("Reason: ".. reason) or ""
 	log('M','quitMP',"Quit MP Called! reason: "..tostring(reason))
 
-	UI.showMdDialog({
+	MPUI.showMdDialog({
 		dialogtype="alert", title="You have been disconnected from the server", text=text, okText="Return to menu",
 		okLua="MPCoreNetwork.leaveServer(true)" -- return to main menu when clicking OK
 	})
@@ -265,13 +265,13 @@ local HandleNetwork = {
 	['Z'] = function(params) positionGE.handle(params) end, -- position and velocity
 	['O'] = function(params) MPVehicleGE.handle(params) end, -- all vehicle spawn, modification and delete events, couplers
 	['P'] = function(params) MPConfig.setPlayerServerID(params) end,
-	['J'] = function(params) MPUpdatesGE.onPlayerConnect() UI.showNotification(params) end, -- A player joined
-	['L'] = function(params) UI.showNotification(params) end, -- Display custom notification
+	['J'] = function(params) MPUpdatesGE.onPlayerConnect() MPUI.showNotification(params) end, -- A player joined
+	['L'] = function(params) MPUI.showNotification(params) end, -- Display custom notification
 	['S'] = function(params) sessionData(params) end, -- Update Session Data
 	['E'] = function(params) handleEvents(params) end, -- Event For another Resource
 	['T'] = function(params) quitMP(params) end, -- Player Kicked Event (old, doesn't contain reason)
 	['K'] = function(params) quitMP(params) end, -- Player Kicked Event (new, contains reason)
-	['C'] = function(params) UI.chatMessage(params) end, -- Chat Message Event
+	['C'] = function(params) MPUI.chatMessage(params) end, -- Chat Message Event
 }
 
 

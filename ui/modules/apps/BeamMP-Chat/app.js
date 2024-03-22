@@ -157,7 +157,7 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 			lastSentMessage = text;
 			if (text.length > 500) addMessage("Your message is over the character limit! (500)");
 			else {
-				bngApi.engineLua('UI.chatSend(' + bngApi.serializeToLua(text) + ')');
+				bngApi.engineLua('MPUI.chatSend(' + bngApi.serializeToLua(text) + ')');
 				chatinput.value = '';
 			}
 		}

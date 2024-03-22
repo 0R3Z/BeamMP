@@ -32,10 +32,10 @@ local function renderFooter(btnHeight)
         imgui.SetCursorPosY((imgui.GetContentRegionAvail().y - imgui.GetFrameHeightWithSpacing()) * 0.5)
 
         if imgui.Button("Reset to default", imgui.ImVec2(0, btnHeight)) then
-            UI.settings = utils.copyTable(UI.defaultSettings)
+            MPUI.settings = utils.copyTable(MPUI.defaultSettings)
             sortedSettings = {}
             local newSortedSettings = {}
-            for name, category in pairs(UI.defaultSettings) do
+            for name, category in pairs(MPUI.defaultSettings) do
                 newSortedSettings[name] = {}
                 for settingName, setting in pairs(category) do
                     table.insert(newSortedSettings[name], { name = settingName, tab = setting })
@@ -48,7 +48,7 @@ local function renderFooter(btnHeight)
         imgui.SameLine()
 
         if imgui.Button("Save", imgui.ImVec2(0, btnHeight)) then
-            UI.saveConfig()
+            MPUI.saveConfig()
         end
         imgui.EndChild()
     end
@@ -85,7 +85,7 @@ end
 -----[       Tabs        ]------
 --------------------------------
 local function renderTheming()
-    local uiScale = UI.settings.window.uiScale
+    local uiScale = MPUI.settings.window.uiScale
     local btnHeight = 28 * uiScale
 
     if imgui.BeginChild1("##tab_color", imgui.ImVec2(0, imgui.GetContentRegionAvail().y - btnHeight - 2), false) then
@@ -98,9 +98,9 @@ local function renderTheming()
 
             imgui.Text(toTitleCase(setting.name))
             imgui.SameLine()
-            imgui.SetCursorPosX((longestSettingName * 8 + 10) * UI.settings.window.uiScale)
+            imgui.SetCursorPosX((longestSettingName * 8 + 10) * MPUI.settings.window.uiScale)
             if imgui.ColorEdit3("##" .. setting.name, color, imgui.ColorEditFlags_NoInputs) then
-                UI.settings.colors[setting.name] = imgui.ImVec4(color[0], color[1], color[2], 1)
+                MPUI.settings.colors[setting.name] = imgui.ImVec4(color[0], color[1], color[2], 1)
                 setting.tab = imgui.ImVec4(color[0], color[1], color[2], 1)
             end
         end
@@ -112,7 +112,7 @@ local function renderTheming()
 end
 
 local function renderGeneral()
-    local uiScale = UI.settings.window.uiScale
+    local uiScale = MPUI.settings.window.uiScale
 
     local btnHeight = 28 * uiScale
     local mb = 2 -- todo: don't hardcode, use style
@@ -126,30 +126,30 @@ local function renderGeneral()
         imgui.Text("Inactive fade")
         imgui.SameLine()
         imgui.SetCursorPosX(posx)
-        local pInactiveFade = imgui.BoolPtr(UI.settings.window.inactiveFade)
+        local pInactiveFade = imgui.BoolPtr(MPUI.settings.window.inactiveFade)
         if imgui.Checkbox("##inactive_fade", pInactiveFade) then
-            UI.settings.window.inactiveFade = pInactiveFade[0]
+            MPUI.settings.window.inactiveFade = pInactiveFade[0]
         end
 
-        UI.settings.window.fadeTime = sliderFloat("Fade Time", posx, availX, UI.settings.window.fadeTime, 0.1, 10, "%.2f")
-        UI.settings.window.uiScale = sliderFloat("UI Scale", posx, availX, UI.settings.window.uiScale, 0.95, 1.5, "%.2f")
+        MPUI.settings.window.fadeTime = sliderFloat("Fade Time", posx, availX, MPUI.settings.window.fadeTime, 0.1, 10, "%.2f")
+        MPUI.settings.window.uiScale = sliderFloat("UI Scale", posx, availX, MPUI.settings.window.uiScale, 0.95, 1.5, "%.2f")
 
         -- Fade when collapsed
         imgui.Text("Fade when collapsed")
         imgui.SameLine()
         imgui.SetCursorPosX(posx)
-        local pFadeWhenCollapsed = imgui.BoolPtr(UI.settings.window.fadeWhenCollapsed)
+        local pFadeWhenCollapsed = imgui.BoolPtr(MPUI.settings.window.fadeWhenCollapsed)
         if imgui.Checkbox("##fade_when_collapsed", pFadeWhenCollapsed) then
-            UI.settings.window.fadeWhenCollapsed = pFadeWhenCollapsed[0]
+            MPUI.settings.window.fadeWhenCollapsed = pFadeWhenCollapsed[0]
         end
 
         -- Show on message
         imgui.Text("Show on message")
         imgui.SameLine()
         imgui.SetCursorPosX(posx)
-        local pShowOnMessage = imgui.BoolPtr(UI.settings.window.showOnMessage)
+        local pShowOnMessage = imgui.BoolPtr(MPUI.settings.window.showOnMessage)
         if imgui.Checkbox("##show_on_message", pShowOnMessage) then
-            UI.settings.window.showOnMessage = pShowOnMessage[0]
+            MPUI.settings.window.showOnMessage = pShowOnMessage[0]
         end
 
         -- Bottom Buttons
@@ -183,7 +183,7 @@ local function render()
         --     imgui.PushStyleColor1(imgui.Col_Button)
         -- end
 
-        if imgui.Button(tab.name, imgui.ImVec2(imgui.GetWindowWidth() / 2, 23 * UI.settings.window.uiScale)) then
+        if imgui.Button(tab.name, imgui.ImVec2(imgui.GetWindowWidth() / 2, 23 * MPUI.settings.window.uiScale)) then
             renderTab = tab.render
         end
 

@@ -106,7 +106,7 @@ local function applyPos(decoded, serverVehicleID)
 	vehicle.position = Point3F(decoded.pos[1],decoded.pos[2],decoded.pos[3])
 
 	local owner = vehicle:getOwner()
-	if owner then UI.setPlayerPing(owner.name, ping) end-- Send ping to UI
+	if owner then MPUI.setPlayerPing(owner.name, ping) end-- Send ping to UI
 end
 
 --- Tries to delay the positional update execution to match the average update interval from this vehicle
