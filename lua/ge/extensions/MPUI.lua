@@ -356,8 +356,6 @@ local function renderWindow()
         imgui.SetWindowFontScale(uiScale)
         if imgui.BeginChild1("ChatTitlebar", imgui.ImVec2(0, titlebarHeight - 8), false, imgui.WindowFlags_NoScrollbar) then
             local style = imgui.GetStyle()
-            local padding = style.FramePadding.x
-            local btnPadding = math.max(1.5, padding / uiScale)
             local scaledButtonSize = buttonSize * uiScale
 
             local availHeight = imgui.GetContentRegionAvail().y
@@ -396,7 +394,7 @@ local function renderWindow()
 
             -- Player List button
             imgui.SameLine()
-            if utils.imageButton(M.uiIcons.user.texId, scaledButtonSize, nil, nil, nil, btnPadding) then
+            if utils.imageButton(M.uiIcons.user.texId, scaledButtonSize) then
                 if collapsed then
                     justExpanded = true
                     collapsed = false
@@ -408,7 +406,7 @@ local function renderWindow()
 
             -- Settings button
             imgui.SameLine()
-            if utils.imageButton(M.uiIcons.settings.texId, scaledButtonSize, nil, nil, nil, btnPadding) then
+            if utils.imageButton(M.uiIcons.settings.texId, scaledButtonSize) then
                 if collapsed then
                     justExpanded = true
                     collapsed = false
