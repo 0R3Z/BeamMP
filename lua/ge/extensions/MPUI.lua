@@ -59,7 +59,7 @@ M.defaultSettings = {
         windowBackground = imgui.ImVec4(0.13, 0.13, 0.13, maxWindowOpacity),
         buttonBackground = imgui.ImVec4(0.13, 0.13, 0.13, maxWindowOpacity),
         buttonHovered = imgui.ImVec4(0.95, 0.43, 0.49, 1),
-        buttonActive = imgui.ImVec4(0.95, 0.43, 0.49, 1),
+        buttonActive = imgui.ImVec4(0.13, 0.13, 0.13, 1),
         textColor = imgui.ImVec4(1, 1, 1, 1),
         primaryColor = imgui.ImVec4(0.13, 0.13, 0.13, 1),
         secondaryColor = imgui.ImVec4(0.95, 0.43, 0.49, 1)
@@ -278,12 +278,12 @@ local function renderWindow()
     local colorCount = pushColors({
         -- Slider
         { imgui.Col_SliderGrab,            colorToVec4(colors.secondaryColor,   windowOpacity) },
-        { imgui.Col_SliderGrabActive,      colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_SliderGrabActive,      colorToVec4(colors.buttonBackground, windowOpacity) },
 
         -- Resize Grip
         { imgui.Col_ResizeGrip,            colorToVec4(colors.primaryColor,     windowOpacity) },
         { imgui.Col_ResizeGripHovered,     colorToVec4(colors.secondaryColor,   windowOpacity) },
-        { imgui.Col_ResizeGripActive,      colorToVec4(colors.secondaryColor,   windowOpacity) },
+        { imgui.Col_ResizeGripActive,      colorToVec4(colors.buttonBackground, windowOpacity) },
 
         -- Scrollbar
         { imgui.Col_ScrollbarBg,           colorToVec4(colors.primaryColor,     windowOpacity) },
@@ -299,7 +299,7 @@ local function renderWindow()
 
         -- Other Colors
         { imgui.Col_WindowBg,              colorToVec4(colors.windowBackground, windowOpacity) },
-        { imgui.Col_CheckMark,             colorToVec4(colors.buttonActive,     windowOpacity) },
+        { imgui.Col_CheckMark,             colorToVec4(colors.secondaryColor,   windowOpacity) },
         { imgui.Col_Text,                  colorToVec4(colors.textColor,        windowOpacity) },
 
         -- Button Colors
