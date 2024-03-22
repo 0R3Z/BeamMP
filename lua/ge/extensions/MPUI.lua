@@ -526,7 +526,8 @@ local function chatMessage(rawMessage) -- chat message received (angular)
     local startPos, endPos = string.find(rawMessage, ":", 2)
     if startPos then
         local username = string.sub(rawMessage, 2, startPos - 1)
-        local msg = string.sub(rawMessage, endPos + 1)
+        local msg = string.sub(rawMessage,endPos + 1)
+        msg = msg:sub(2, #msg)
 
         local player = MPVehicleGE.getPlayerByName(username)
 
@@ -643,7 +644,7 @@ local function onUpdate(dt)
     if not developerMode and (worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession()) then return end
     renderWindow()
 
-    -- imgui.ShowDemoWindow()
+    imgui.ShowDemoWindow()
 end
 
 M.updateLoading = updateLoading

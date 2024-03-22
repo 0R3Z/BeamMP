@@ -238,7 +238,7 @@ local function sendChatMessage(message)
         TriggerClientEvent("ChatMessageSent", c)
     else
         local color = {[0] = 255, [1] = 0, [2] = 0, [3] = 255}
-        addMessage("Daniel-W", " " .. message, 0, color) -- because `MPConfig.getNickname()` returns an empty string (only started happening)
+        addMessage("Daniel-W", message, 0, color) -- because `MPConfig.getNickname()` returns an empty string (only started happening)
     end
 
     wasMessageSent = true
@@ -270,77 +270,77 @@ local function render()
             forceBottom = false
         end
 
-        local pos = imgui.GetWindowPos()
-
         local availX = imgui.GetContentRegionAvail().x
-        local availY = imgui.GetContentRegionAvail().y
+        local clipper = imgui.ImGuiListClipper()
+        imgui.ImGuiListClipper_Begin(clipper, tableSize(M.chatMessages))
 
-        local clipMin = imgui.ImVec2(pos.x, pos.y)
-        local clipMax = imgui.ImVec2(pos.x + availX + 10, pos.y + availY + 10)
-        imgui.PushClipRect(clipMin, clipMax, true)
+        while (imgui.ImGuiListClipper_Step(clipper)) do
+            for i = clipper.DisplayStart + 1, clipper.DisplayEnd, 1 do
+                local message = M.chatMessages[i]
+                local usernameSizeX = imgui.CalcTextSize(message.username).x
+                local timestampStr = os.date("%H:%M", message.sentTime)
+                local timestampSize = imgui.CalcTextSize(timestampStr).x
+                local columnWidth = availX - timestampSize
 
-        -- Debug for viewing the ClipRect
-        -- imgui.ImDrawList_AddRectFilled(imgui.GetWindowDrawList(), clipMin, clipMax, imgui.GetColorU322(imgui.ImVec4(255, 0, 0, 20)))
-
-        -- Render Message | Time
-        for _, message in ipairs(M.chatMessages) do
-            local usernameSizeX = imgui.CalcTextSize(message.username).x
-            local timestampStr = os.date("%H:%M", message.sentTime)
-            local timestampSize = imgui.CalcTextSize(timestampStr).x
-            local columnWidth = availX - timestampSize
-
-            -- Chatbox Column
-            imgui.Columns(2, "##ChatColumns", false)
-            
-            if scrollbarVisible then
-                columnWidth = columnWidth - scrollbarSize
-            end
-
-            imgui.SetColumnWidth(0, columnWidth)
-            
-            if message.color then
-                local color = imgui.ImVec4(message.color[0]/255, message.color[1]/255, message.color[2]/255, message.color[3]/255)
-                imgui.TextColored(color, message.username .. ": ")
-            else
-                imgui.Text(message.username .. ": ")
-            end
-
-            -- Enable word wrapping
-            imgui.PushTextWrapPos(imgui.GetContentRegionAvail().x)
-            
-            local currentWidth = usernameSizeX + spaceSize
-            imgui.SameLine(currentWidth + spaceSize)
-
-            for i=2, #message.message do
-                local msg = message.message[i]
-                local textSize = imgui.CalcTextSize(msg.text).x
-
-                if (currentWidth + textSize <= columnWidth) then
-                    imgui.SameLine(currentWidth + spaceSize)
-                else
-                    currentWidth = 0
-                    -- imgui.SameLine(currentWidth + imgui.CalcTextSize(" ").x)
+                -- Chatbox Column
+                imgui.Columns(2, "##ChatColumns", false)
+                
+                if scrollbarVisible then
+                    columnWidth = columnWidth - scrollbarSize
                 end
 
-                currentWidth = currentWidth + textSize
-                imgui.TextColored(msg.color, msg.text)
-            end
-        
-            -- Disable word wrapping
-            imgui.PopTextWrapPos()
-        
-            if scrollToBottom or forceBottom then
-                imgui.SetScrollHereY(1)
-            end
-        
-            -- Time Column
-            imgui.NextColumn()
-            imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetContentRegionAvail().x / 2 - timestampSize / 2)
+                imgui.SetColumnWidth(0, columnWidth)
+                
+                if message.color then
+                    local color = imgui.ImVec4(message.color[0]/255, message.color[1]/255, message.color[2]/255, message.color[3]/255)
+                    imgui.TextColored(color, message.username .. ": ")
+                else
+                    imgui.Text(message.username .. ": ")
+                end
 
-            imgui.Text(os.date("%H:%M", message.sentTime))
-        
-            imgui.Columns(1)
+                -- Enable word wrapping
+                imgui.PushTextWrapPos(imgui.GetContentRegionAvail().x)
+                
+                local currentWidth = usernameSizeX + spaceSize
+                imgui.SameLine(currentWidth + spaceSize)
+
+                for i=1, #message.message do
+                    local msg = message.message[i]
+                    local textSize = imgui.CalcTextSize(msg.text).x
+
+                    if (currentWidth + textSize <= columnWidth) then
+                        imgui.SameLine(currentWidth + spaceSize)
+                    else
+                        currentWidth = 0
+                        -- imgui.SameLine(currentWidth + imgui.CalcTextSize(" ").x)
+                    end
+
+                    currentWidth = currentWidth + textSize
+                    imgui.TextColored(msg.color, msg.text)
+                end
+            
+                -- Disable word wrapping
+                imgui.PopTextWrapPos()
+            
+                if scrollToBottom or forceBottom then
+                    imgui.SetScrollHereY(1)
+                end
+            
+                -- Time Column
+                imgui.NextColumn()
+                imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetContentRegionAvail().x / 2 - timestampSize / 2)
+
+                imgui.Text(os.date("%H:%M", message.sentTime))
+            
+                imgui.Columns(1)
+            end
         end
+
+        if scrollToBottom or forceBottom then
+            imgui.SetScrollHereY(1)
+        end
+
+        imgui.ImGuiListClipper_End(clipper)
 
         imgui.PopClipRect()
         imgui.EndChild()
