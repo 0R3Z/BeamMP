@@ -5,7 +5,6 @@
 --- multiplayer_ui_utils API.
 --- Author of this documentation is Titch
 --- @module multiplayer_ui_utils
---- @usage copyTable(t) -- internal access
 --- @usage multiplayer_ui_utils.imageButton(texID, size, color, activeColor, hoveredColor) -- external access
 
 local M = {}
@@ -36,20 +35,5 @@ M.imageButton = function(texID, size, color, activeColor, hoveredColor)
     imgui.PopStyleColor()
     return false
 end
-
---- Creates a deep copy of the provided table.
---- @param t table The table to copy.
---- @return table copy new table that is a deep copy of the original table.
-M.copyTable = function(t)
-    local copy = {}
-    for k, v in pairs(t) do
-        if type(v) == "table" then
-            v = M.copyTable(v)
-        end
-        copy[k] = v
-    end
-    return copy
-end
-
 
 return M

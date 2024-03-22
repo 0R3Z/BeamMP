@@ -32,7 +32,7 @@ local function renderFooter(btnHeight)
         imgui.SetCursorPosY((imgui.GetContentRegionAvail().y - imgui.GetFrameHeightWithSpacing()) * 0.5)
 
         if imgui.Button("Reset to default", imgui.ImVec2(0, btnHeight)) then
-            MPUI.settings = utils.copyTable(MPUI.defaultSettings)
+            MPUI.settings = deepcopy(MPUI.defaultSettings)
             sortedSettings = {}
             local newSortedSettings = {}
             for name, category in pairs(MPUI.defaultSettings) do
