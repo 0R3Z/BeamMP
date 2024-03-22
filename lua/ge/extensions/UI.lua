@@ -126,6 +126,7 @@ local function updatePlayersList(data)
 	playersString = data or playersString
 	local players = split(playersString, ",")
     local playerListData = {}
+
 	for index, p in ipairs(players) do
 		local player = MPVehicleGE.getPlayerByName(p)
 		local username = p
@@ -148,7 +149,7 @@ local function updatePlayersList(data)
 		table.insert(playerListData, {name = p, formatted_name = username, color = color, id = id})
 	end
 	if not MPCoreNetwork.isMPSession() or tableIsEmpty(players) then return end
-	guihooks.trigger("playerList", jsonEncode(players))
+	guihooks.trigger("playerList", jsonEncode(playerListData))
 	guihooks.trigger("playerPings", jsonEncode(pings))
 	playerListWindow.updatePlayerList(pings) -- Send pings because this is a key-value table that contains name and the ping
 end
@@ -578,15 +579,13 @@ local function onExtensionLoaded()
 
         ::continue::
     end
-
-	initialized = true
 end
 
 --- onUpdate is a game eventloop function. It is called each frame by the game engine.
 -- This is the main processing thread of BeamMP in the game
 -- @param dt float
 local function onUpdate(dt)
-    -- if worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not initialized or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession() then return end
+    if worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession() then return end
     renderWindow()
 end
 
