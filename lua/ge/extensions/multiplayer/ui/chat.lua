@@ -57,81 +57,38 @@ local colorCodes = {
 
 --- Converts a text string into a list of colored text segments for use in IMGUI.
 --- @param text string The input text to be formatted.
---- @param nocolor boolean (optional) If true, all text segments will have the default color.
---- @return table Returns a table containing colored text segments.
-local function textToColorAndText(text, nocolor)
-    local color = colorCodes[string.sub(text, 1, 1)] or colorCodes["r"]
-    local text = string.sub(text, 2, #text)
-    if(nocolor) then color = colorCodes["r"] end
+--- @param colorEnabled boolean If disabled, all text segments will have the default color.
+--- @return table A table containing colored text segments.
+--- @return number The complete string size, we can use this for calculating text-wrap positions.
+local function textToColorAndText(text, colorEnabled)
+    local segments = {}
+    local defaultColor = colorCodes["r"]
+    local currentColor = defaultColor
+    local textSize = 0
 
-    local txtList = {}
-
-    local currentTxt = ""
-    local wasSpace = false
-    local c = ""
-
-    for i = 1, #text do
-        c = text:sub(i,i)
-
-        if c == " " then 
-            wasSpace = true
-            currentTxt = currentTxt .. c
-        else
-            if(not wasSpace) then
-                currentTxt = currentTxt .. c
-            else
-                table.insert(txtList, {
-                    color = color,
-                    text = currentTxt
-                })
-                currentTxt = c
+    for segment in string.gmatch(text, "[^%^]+") do
+        local colorCode = string.match(segment, "^[0-9a-r]")
+        if colorCode and colorCodes[tostring(colorCode)] then
+            if colorEnabled then
+                currentColor = colorCodes[tostring(colorCode)]
             end
-            wasSpace = false
-        end
-    end
-
-    if(currentTxt ~= "") then
-        table.insert(txtList, {
-            color = color,
-            text = currentTxt
-        })
-    end
-
-    return txtList
-end
-
---- Formats a text string with color codes and returns a list of colored text segments for use in IMGUI.
---- @param text string The input text to be formatted.
---- @param nocolor boolean (optional) If true, all text segments will have the default color.
---- @return table Returns a table containing colored text segments.
-local function formatTextWithColor(text, nocolor)
-    if(string.sub(text, 1, 1) ~= "^") then
-        text = "^f" .. text
-    end
-
-    local txtList = {}
-
-    local startIdx, endIdx = string.find(text, "%^")
-
-    while startIdx do
-        local partStr = string.sub(text, 1, startIdx - 1)
-        if partStr ~= "" then
-            for _, v in ipairs(textToColorAndText(partStr, nocolor)) do
-                table.insert(txtList, v)
-            end
+            
+            segment = string.sub(segment, 2)
         end
 
-        text = string.sub(text, endIdx + 1)
-        startIdx, endIdx = string.find(text, "%^")
+        local newSegment = { text = segment }
+        newSegment.textSize = imgui.CalcTextSize(segment).x
+
+        if colorEnabled and currentColor ~= defaultColor then
+            newSegment.color = currentColor
+        end
+
+        table.insert(segments, newSegment)
+        textSize = textSize + newSegment.textSize
     end
 
-    for _, v in ipairs(textToColorAndText(text, nocolor)) do
-        table.insert(txtList, v)
-    end
-
-    return txtList
+    return segments, textSize
 end
-
 
 --- Callback function for ImGui input text.
 --- @param data table The input text data.
@@ -199,19 +156,19 @@ end
 --- @param id number The ID of the message.
 --- @param color string The color of the message.
 local function addMessage(username, message, id, color)
-    if(username == "Server") then
-        message = formatTextWithColor(message, false)
-    else
-        message = formatTextWithColor(message, true)
-    end
+    local messageSize = 0
+    message, messageSize = textToColorAndText(message, username == "Server")
 
     local messageTable = {
         username = username,
         color = color,
         message = message,
+        messageSize = messageSize,
         sentTime = os.time(),
         id = #M.chatMessages + 1
     }
+
+    dump(messageTable)
 
     table.insert(M.chatMessages, messageTable)
 
@@ -323,18 +280,22 @@ local function render()
 
                 for i=1, #message.message do
                     local msg = message.message[i]
-                    local textSize = imgui.CalcTextSize(msg.text).x
+                    local textSize = msg.textSize
 
                     if (currentWidth + textSize <= columnWidth) then
                         imgui.SameLine(currentWidth + spaceSize)
                     else
                         currentWidth = 0
-                        -- imgui.SameLine(currentWidth + imgui.CalcTextSize(" ").x)
                     end
 
                     currentWidth = currentWidth + textSize
-                    imgui.TextColored(msg.color, msg.text)
-                    if imgui.IsItemHovered() then
+                    if msg.color then
+                        imgui.TextColored(msg.color, msg.text)
+                    else
+                        imgui.TextUnformatted(msg.text)
+                    end
+
+                    if imgui.IsItemHovered() and not imgui.IsMouseDragging(0) then
                         imgui.SetMouseCursor(7)
                         if imgui.IsItemClicked(0) then
                             copyIdx = i
@@ -346,6 +307,9 @@ local function render()
                         endWords[#endWords + 1] = msg.text
                     end
                 end
+
+                -- Disable word wrapping
+                imgui.PopTextWrapPos()
 
                 -- Copy the missing words
                 if copyIdx ~= -1 then
@@ -372,9 +336,6 @@ local function render()
                         speed = 100
                     })
                 end
-            
-                -- Disable word wrapping
-                imgui.PopTextWrapPos()
             
                 -- Time Column
                 imgui.NextColumn()
