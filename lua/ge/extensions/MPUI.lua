@@ -268,8 +268,6 @@ local function pushColors(colors)
 end
 
 local function renderAnimations(rootWindowPos, dt)
-    local drawList = imgui.GetWindowDrawList()
-
     for i = #animationQueue, 1, -1 do
         local anim = animationQueue[i]
         local data = anim[2]
@@ -290,7 +288,7 @@ local function renderAnimations(rootWindowPos, dt)
                 local drawPos = imgui.ImVec2(data.pos.x, data.pos.y)
                 utils.dumpVec2("drawPos", drawPos)
 
-                imgui.ImDrawList_AddText1(drawList, drawPos, color, data.text, nil)
+                imgui.ImDrawList_AddText1(imgui.GetWindowDrawList(), drawPos, color, data.text, nil)
             end
         end
     end

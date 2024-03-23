@@ -296,6 +296,21 @@ local function render()
                 else
                     imgui.Text(message.username .. ": ")
                 end
+                if imgui.IsItemHovered() then
+                    imgui.SetMouseCursor(7)
+                    if imgui.IsItemClicked(0) then
+                        local mousePos = imgui.GetMousePos()
+
+                        imgui.SetClipboardText(message.username)
+                        MPUI.addAnimation("flyout", {
+                            text = "Copied to Clipboard",
+                            pos = mousePos,
+                            color = imgui.GetColorU322(imgui.ImVec4(0.91, 0.67, 0.19, 1)),
+                            fadeoutTime = 1000,
+                            speed = 100
+                        })
+                    end
+                end
 
                 -- Enable word wrapping
                 imgui.PushTextWrapPos(imgui.GetContentRegionAvail().x)
@@ -352,6 +367,7 @@ local function render()
                     MPUI.addAnimation("flyout", {
                         text = "Copied to Clipboard",
                         pos = mousePos,
+                        color = imgui.GetColorU322(imgui.ImVec4(0.91, 0.67, 0.19, 1)),
                         fadeoutTime = 1000,
                         speed = 100
                     })
