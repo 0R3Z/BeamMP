@@ -156,7 +156,6 @@ end
 --- @param color string The color of the message.
 local function addMessage(username, message, id, color)
     local messageSize = 0
-    message = message:gsub("%%", "%%%%")
     message, messageSize = textToColorAndText(message, true)
 
     local messageTable = {
@@ -290,11 +289,10 @@ local function render()
                     end
 
                     currentWidth = currentWidth + textSize
-                    if msg.color then
-                        imgui.TextColored(msg.color, msg.text)
-                    else
-                        imgui.TextUnformatted(msg.text)
-                    end
+
+                    if msg.color then imgui.PushStyleColor2(imgui.Col_Text, msg.color) end
+                    imgui.TextUnformatted(msg.text)
+                    if msg.color then imgui.PopStyleColor() end
 
                     if imgui.IsItemHovered() and not imgui.IsMouseDragging(0) then
                         imgui.SetMouseCursor(7)
