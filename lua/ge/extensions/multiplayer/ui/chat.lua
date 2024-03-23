@@ -77,14 +77,13 @@ local function textToColorAndText(text, colorEnabled)
         end
 
         local newSegment = { text = segment }
-        newSegment.textSize = imgui.CalcTextSize(segment).x
 
         if colorEnabled and currentColor ~= defaultColor then
             newSegment.color = currentColor
         end
 
         table.insert(segments, newSegment)
-        textSize = textSize + newSegment.textSize
+        textSize = textSize + imgui.CalcTextSize(segment).x
     end
 
     return segments, textSize
@@ -157,7 +156,8 @@ end
 --- @param color string The color of the message.
 local function addMessage(username, message, id, color)
     local messageSize = 0
-    message, messageSize = textToColorAndText(message, username == "Server")
+    message = message:gsub("%%", "%%%%")
+    message, messageSize = textToColorAndText(message, true)
 
     local messageTable = {
         username = username,
@@ -280,8 +280,9 @@ local function render()
 
                 for i=1, #message.message do
                     local msg = message.message[i]
-                    local textSize = msg.textSize
+                    local textSize = imgui.CalcTextSize(msg.text).x
 
+                    -- ! Word wrap with multiple lines is quite buggy.
                     if (currentWidth + textSize <= columnWidth) then
                         imgui.SameLine(currentWidth + spaceSize)
                     else
