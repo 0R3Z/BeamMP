@@ -66,14 +66,14 @@ local function textToColorAndText(text, colorEnabled)
     local currentColor = defaultColor
     local textSize = 0
 
-    for segment in string.gmatch(text, "[^%^]+") do
-        local colorCode = string.match(segment, "^[0-9a-r]")
-        if colorCode and colorCodes[tostring(colorCode)] then
+    for segment in string.gmatch(text, "%^?[^%^]+") do
+        local colorCode = string.match(segment, "^%^[0-9a-r]")
+        if colorCode and colorCodes[tostring(colorCode:sub(2, 2))] then
             if colorEnabled then
-                currentColor = colorCodes[tostring(colorCode)]
+                currentColor = colorCodes[tostring(colorCode:sub(2, 2))]
             end
             
-            segment = string.sub(segment, 2)
+            segment = string.sub(segment, 3)
         end
 
         local newSegment = { text = segment }
